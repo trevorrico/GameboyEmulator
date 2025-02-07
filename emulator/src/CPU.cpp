@@ -136,7 +136,7 @@ void opcode_LD_n16_r16(uint16_t& r16)
 
 	uint16_t address = (high << 8) | low; 
 
-	MemoryBus::Write(address, r16 & 0x0F);
+	MemoryBus::Write(address, r16 & 0x00FF);
 	MemoryBus::Write(address + 1, r16 >> 8);
 
 	context.registers.PC += 3;
@@ -166,6 +166,23 @@ void opcode_LD_hl_r8(uint8_t& r8)
 
 	context.registers.PC += 1;
 	context.cycles += 2;
+}
+
+void opcode_LDH_addr8_r8(uint8_t& addr, uint8_t& r8)
+{
+	MemoryBus::Write(r8 + 0xFF00, r8);
+
+	context.registers.PC += 1;
+	context.cycles += 2;
+}
+
+void opcode_LDH_n8_r8(uint8_t& r8)
+{
+	uint8_t addr = MemoryBus::Read(context.registers.PC + 1);
+	opcode_LDH_addr8_r8(addr, r8);
+
+	context.registers.PC += 1;
+	context.cycles += 1;
 }
 
 void opcode_INC_r16(uint16_t& r16)
@@ -269,6 +286,14 @@ void opcode_ADD_A_r8(uint8_t& r8)
 	context.cycles += 1;
 }
 
+void opcode_ADD_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_ADD_A_r8(n8);
+	context.registers.PC += 1;
+	context.cycles += 1;
+}
+
 void opcode_ADD_A_hl()
 {
 	uint8_t value = MemoryBus::Read(context.registers.HL);
@@ -282,6 +307,14 @@ void opcode_ADC_A_r8(uint8_t& r8)
 	uint8_t val = r8 + carry;
 
 	opcode_ADD_A_r8(val);
+}
+
+void opcode_ADC_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_ADC_A_r8(n8);
+	context.registers.PC += 1;
+	context.cycles += 1;
 }
 
 void opcode_ADC_A_hl()
@@ -305,6 +338,14 @@ void opcode_SUB_A_r8(uint8_t& r8)
 	context.cycles += 1;
 }
 
+void opcode_SUB_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_SUB_A_r8(n8);
+	context.registers.PC += 1;
+	context.cycles += 1;
+}
+
 void opcode_SUB_A_hl()
 {
 	uint8_t value = MemoryBus::Read(context.registers.HL);
@@ -318,6 +359,14 @@ void opcode_SBC_A_r8(uint8_t& r8)
 	uint8_t val = r8 + carry;
 
 	opcode_SUB_A_r8(val);
+}
+
+void opcode_SBC_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_SBC_A_r8(n8);
+	context.registers.PC += 1;
+	context.cycles += 1;
 }
 
 void opcode_SBC_A_hl()
@@ -336,6 +385,14 @@ void opcode_AND_A_r8(uint8_t& r8)
 	set_half_carry_flag(true);
 	set_carry_flag(false);
 
+	context.registers.PC += 1;
+	context.cycles += 1;
+}
+
+void opcode_AND_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_AND_A_r8(n8);
 	context.registers.PC += 1;
 	context.cycles += 1;
 }
@@ -360,6 +417,14 @@ void opcode_XOR_A_r8(uint8_t& r8)
 	context.cycles += 1;
 }
 
+void opcode_XOR_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_XOR_A_r8(n8);
+	context.registers.PC += 1;
+	context.cycles += 1;
+}
+
 void opcode_XOR_A_hl()
 {
 	uint8_t value = MemoryBus::Read(context.registers.HL);
@@ -380,6 +445,14 @@ void opcode_OR_A_r8(uint8_t& r8)
 	context.cycles += 1;
 }
 
+void opcode_OR_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_OR_A_r8(n8);
+	context.registers.PC += 1;
+	context.cycles += 1;
+}
+
 void opcode_OR_A_hl()
 {
 	uint8_t value = MemoryBus::Read(context.registers.HL);
@@ -396,6 +469,14 @@ void opcode_CP_A_r8(uint8_t& r8)
 	set_half_carry_flag((context.registers.A & 0x0F) < (r8 & 0x0F));
 	set_carry_flag(context.registers.A < r8);
 
+	context.registers.PC += 1;
+	context.cycles += 1;
+}
+
+void opcode_CP_A_n8()
+{
+	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
+	opcode_CP_A_r8(n8);
 	context.registers.PC += 1;
 	context.cycles += 1;
 }
@@ -550,6 +631,132 @@ void opcode_CCF()
 
 	context.registers.PC += 1;
 	context.cycles += 1;
+}
+
+void opcode_POP_r16(uint16_t& r16)
+{
+	uint8_t low = MemoryBus::Read(context.registers.SP);
+	context.registers.SP++;
+	uint8_t high = MemoryBus::Read(context.registers.SP);
+	context.registers.SP++;
+
+	r16 = (high << 8) | low;
+
+	context.registers.PC += 1;
+	context.cycles += 3;
+}
+
+void opcode_PUSH_r16(uint16_t& r16)
+{
+	context.registers.SP--;
+	MemoryBus::Write(context.registers.SP, r16 >> 8);
+	context.registers.SP--;
+	MemoryBus::Write(context.registers.SP,  & 0x00FF);
+
+	context.registers.PC += 1;
+	context.cycles += 4;
+}
+
+void opcode_RET()
+{
+	opcode_POP_r16(context.registers.PC);
+	context.registers.PC -= 1; // I do not know if this should be here 
+	context.cycles += 1;
+}
+
+void opcode_RET_cond(uint8_t cond)
+{
+	if(cond)
+	{
+		opcode_RET();
+		context.cycles += 1;
+	}
+	else
+	{
+		context.registers.PC++;
+		context.cycles += 2;
+	}
+}
+
+void opcode_JP_r16(uint16_t& r16)
+{
+	context.registers.PC = r16;
+	context.cycles += 4;
+}
+
+void opcode_JP_n16()
+{
+	uint8_t low = MemoryBus::Read(context.registers.PC + 1);
+	uint8_t high = MemoryBus::Read(context.registers.PC + 2);
+
+	uint16_t value = (high << 8) | low;
+	opcode_JP_r16(value);
+}
+
+void opcode_JP_cond(uint8_t cond)
+{
+	if(cond)
+	{
+		opcode_JP_n16();
+	}
+	else
+	{
+		context.registers.PC += 3;
+		context.cycles += 4;
+	}
+}
+
+void opcode_JP_hl()
+{
+	context.registers.PC = context.registers.HL;
+	context.cycles += 1;
+}
+
+void opcode_CALL()
+{
+	uint8_t low = MemoryBus::Read(context.registers.PC + 1);
+	uint8_t high = MemoryBus::Read(context.registers.PC + 2);
+	context.registers.PC += 2;
+
+	uint16_t value = (high << 8) | low;
+
+	opcode_PUSH_r16(value);
+	opcode_JP_r16(value);
+
+	context.cycles -= 2;
+}
+
+void opcode_CALL_cond(uint8_t cond)
+{
+	if(cond)
+	{
+		opcode_CALL();
+	}
+	else
+	{
+		context.registers.PC += 3;
+		context.cycles += 3;
+	}
+}
+
+void opcode_RST(uint16_t address)
+{
+	opcode_PUSH_r16(address);
+	opcode_JP_r16(address);
+
+	context.cycles -= 4;
+}
+
+void opcode_EI()
+{
+	// TODO
+}
+
+void opcode_RETI()
+{
+	// TODO
+	opcode_EI();
+	opcode_RET();
 }
 
 void CPU::Step()
@@ -1093,53 +1300,53 @@ void CPU::Step()
 	case 0xAF: // XOR A, A
 		opcode_XOR_A_r8(context.registers.A);
 		break;
-	case 0xA0: // OR A, B
-		opcode_AND_A_r8(context.registers.B);
+	case 0xB0: // OR A, B
+		opcode_OR_A_r8(context.registers.B);
 		break;
-	case 0xA1: // AND A, C
-		opcode_AND_A_r8(context.registers.C);
+	case 0xB1: // OR A, C
+		opcode_OR_A_r8(context.registers.C);
 		break;
-	case 0xA2: // AND A, D
-		opcode_AND_A_r8(context.registers.D);
+	case 0xB2: // OR A, D
+		opcode_OR_A_r8(context.registers.D);
 		break;
-	case 0xA3: // ANd A, E
-		opcode_AND_A_r8(context.registers.E);
+	case 0xB3: // OR A, E
+		opcode_OR_A_r8(context.registers.E);
 		break;
-	case 0xA4: // AND A, H
-		opcode_AND_A_r8(context.registers.H);
+	case 0xB4: // OR A, H
+		opcode_OR_A_r8(context.registers.H);
 		break;
-	case 0xA5: // AND A, L
-		opcode_AND_A_r8(context.registers.L);
+	case 0xB5: // OR A, L
+		opcode_OR_A_r8(context.registers.L);
 		break;
-	case 0xA6: // AND A, [HL]
-		opcode_AND_A_hl();
+	case 0xB6: // OR A, [HL]
+		opcode_OR_A_hl();
 		break;
-	case 0xA7: // AND A, A
-		opcode_AND_A_r8(context.registers.A);
+	case 0xB7: // OR A, A
+		opcode_OR_A_r8(context.registers.A);
 		break;
-	case 0xA8: // XOR A, B
-		opcode_XOR_A_r8(context.registers.B);
+	case 0xB8: // CP A, B
+		opcode_CP_A_r8(context.registers.B);
 		break;
-	case 0xA9: // XOR A, C
-		opcode_XOR_A_r8(context.registers.C);
+	case 0xB9: // CP A, C
+		opcode_CP_A_r8(context.registers.C);
 		break;
-	case 0xAA: // XOR A, D
-		opcode_XOR_A_r8(context.registers.D);
+	case 0xBA: // CP A, D
+		opcode_CP_A_r8(context.registers.D);
 		break;
-	case 0xAB: // XOR A, E
-		opcode_XOR_A_r8(context.registers.E);
+	case 0xBB: // CP A, E
+		opcode_CP_A_r8(context.registers.E);
 		break;
-	case 0xAC: // XOR A, H
-		opcode_XOR_A_r8(context.registers.H);
+	case 0xBC: // CP A, H
+		opcode_CP_A_r8(context.registers.H);
 		break;
-	case 0xAD: // XOR A, L
-		opcode_XOR_A_r8(context.registers.L);
+	case 0xBD: // CP A, L
+		opcode_CP_A_r8(context.registers.L);
 		break;
-	case 0xAE: // XOR A, [HL]
-		opcode_XOR_A_hl();
+	case 0xBE: // CP A, [HL]
+		opcode_CP_A_hl();
 		break;
-	case 0xAF: // XOR A, A
-		opcode_XOR_A_r8(context.registers.A);
+	case 0xBF: // CP A, A
+		opcode_CP_A_r8(context.registers.A);
 		break;
 	default:
 		std::cout << "Unknown opcode: " << std::hex << opcode << std::endl;
