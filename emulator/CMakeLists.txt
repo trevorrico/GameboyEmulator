@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION "3.22.1")
 
 project("emulator")
 
-add_executable("Emulator" "src/main.cpp" "src/CPU.cpp" "src/MemoryBus.cpp")
+add_executable("Emulator" 
+	"src/main.cpp" 
+	"src/CPU/CPU.cpp" 
+	"src/CPU/Opcodes.cpp"
+	"src/CPU/OpcodeMapping.cpp"
+	"src/MemoryBus.cpp"
+)
 
 set_property(TARGET "Emulator" PROPERTY CXX_STANDARD 17)
 
