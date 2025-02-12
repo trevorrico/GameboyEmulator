@@ -117,16 +117,35 @@ void opcode_LD_r16_A(uint16_t& r16)
 	context.cycles += 2;
 }
 
-void opcode_LD_r8_r16address(uint8_t& r8, uint16_t& r16address)
+void opcode_LD_addr16_A()
+{
+	uint8_t low = MemoryBus::Read(context.registers.PC + 1);
+	uint8_t high = MemoryBus::Read(context.registers.PC + 2);
+	uint16_t r16 = (high << 8) | low;
+	
+	opcode_LD_r16_A(r16);
+
+	context.registers.PC += 2;
+	context.cycles += 2;
+}
+
+void opcode_LD_r8_r16address(uint8_t& r8, uint16_t r16address)
 {
 	r8 = MemoryBus::Read(r16address);
 	context.registers.PC += 1;
 	context.cycles += 2;
 }
 
-void opcode_LD_A_r16(uint16_t& r16)
+void opcode_LD_r8_n16(uint8_t& r8)
 {
-	opcode_LD_r8_r16address(context.registers.A, r16);
+	uint8_t low = MemoryBus::Read(context.registers.PC + 1);
+	uint8_t high = MemoryBus::Read(context.registers.PC + 2);
+
+	uint16_t address = (high << 8) | low; 
+	opcode_LD_r8_r16address(r8, address);
+
+	context.registers.PC += 2;
+	context.cycles += 2;
 }
 
 void opcode_LD_n16_r16(uint16_t& r16)
@@ -151,10 +170,33 @@ void opcode_LD_r8_r8(uint8_t& r8_0, uint8_t& r8_1)
 	context.cycles += 1;
 }
 
+void opcode_LD_r16_r16(uint16_t& r8_0, uint16_t& r8_1)
+{
+	r8_0 = r8_1;
+
+	context.registers.PC += 1;
+	context.cycles += 2;
+}
+
 void opcode_LD_hl_n8()
 {
 	uint8_t n8 = MemoryBus::Read(context.registers.PC + 1);
 	MemoryBus::Write(context.registers.HL, n8);
+
+	context.registers.PC += 2;
+	context.cycles += 3;
+}
+
+void opcode_LD_hl_sp_n8()
+{
+	int8_t e8 = static_cast<int8_t>(MemoryBus::Read(context.registers.PC + 1));
+	MemoryBus::Write(context.registers.HL, context.registers.SP + e8);
+	
+	set_carry_flag((context.registers.SP & 0xFF) + e8 > 0xFF);
+	set_half_carry_flag((context.registers.SP & 0x0F) + e8 > 0x0F);
+
+	set_zero_flag(false);
+	set_subtraction_flag(false);
 
 	context.registers.PC += 2;
 	context.cycles += 3;
@@ -176,10 +218,27 @@ void opcode_LDH_addr8_r8(uint8_t& addr, uint8_t& r8)
 	context.cycles += 2;
 }
 
+void opcode_LDH_r8_addr8(uint8_t& r8, uint8_t addr8)
+{
+	r8 = MemoryBus::Read(addr8 + 0xFF00);
+
+	context.registers.PC += 1;
+	context.cycles += 2;
+}
+
 void opcode_LDH_n8_r8(uint8_t& r8)
 {
 	uint8_t addr = MemoryBus::Read(context.registers.PC + 1);
 	opcode_LDH_addr8_r8(addr, r8);
+
+	context.registers.PC += 1;
+	context.cycles += 1;
+}
+
+void opcode_LDH_r8_n8(uint8_t& r8)
+{
+	uint8_t addr = MemoryBus::Read(context.registers.PC + 1);
+	opcode_LDH_r8_addr8(r8, addr);
 
 	context.registers.PC += 1;
 	context.cycles += 1;
@@ -284,6 +343,22 @@ void opcode_ADD_A_r8(uint8_t& r8)
 
 	context.registers.PC += 1;
 	context.cycles += 1;
+}
+
+void opcode_ADD_SP_e8()
+{
+	int8_t e8 = static_cast<int8_t>(MemoryBus::Read(context.registers.PC + 1));
+	
+	set_carry_flag((context.registers.SP & 0xFF) + e8 > 0xFF);
+	set_half_carry_flag((context.registers.SP & 0x0F) + e8 > 0x0F);
+
+	context.registers.SP += e8;
+
+	set_zero_flag(false);
+	set_subtraction_flag(false);
+
+	context.registers.PC += 2;
+	context.cycles += 4;
 }
 
 void opcode_ADD_A_n8()
@@ -651,7 +726,7 @@ void opcode_PUSH_r16(uint16_t& r16)
 	context.registers.SP--;
 	MemoryBus::Write(context.registers.SP, r16 >> 8);
 	context.registers.SP--;
-	MemoryBus::Write(context.registers.SP,  & 0x00FF);
+	MemoryBus::Write(context.registers.SP, (uint8_t)(r16 & 0x00FF));
 
 	context.registers.PC += 1;
 	context.cycles += 4;
@@ -752,6 +827,11 @@ void opcode_EI()
 	// TODO
 }
 
+void opcode_DI()
+{
+	// TODO
+}
+
 void opcode_RETI()
 {
 	// TODO
@@ -796,7 +876,7 @@ void CPU::Step()
 		opcode_ADD_hl(context.registers.BC);
 		break;
 	case 0x0A: // LD A, [BC]
-		opcode_LD_A_r16(context.registers.BC);
+		opcode_LD_r8_r16address(context.registers.A, context.registers.BC);
 		break;
 	case 0x0B: // DEC BC
 		opcode_DEC_r16(context.registers.BC);
@@ -846,7 +926,7 @@ void CPU::Step()
 		opcode_ADD_hl(context.registers.DE);
 		break;
 	case 0x1A: // LD A, [DE]
-		opcode_LD_A_r16(context.registers.DE);
+		opcode_LD_r8_r16address(context.registers.A, context.registers.DE);
 		break;
 	case 0x1B: // DEC DE
 		opcode_DEC_r16(context.registers.DE);
@@ -895,7 +975,7 @@ void CPU::Step()
 		opcode_ADD_hl(context.registers.HL);
 		break;
 	case 0x2A: // LD A, [HL+]
-		opcode_LD_A_r16(context.registers.HL);
+		opcode_LD_r8_r16address(context.registers.A, context.registers.HL);
 		context.registers.HL += 1;
 		break;
 	case 0x2B: // DEC HL
@@ -945,7 +1025,7 @@ void CPU::Step()
 		opcode_ADD_hl(context.registers.SP);
 		break;
 	case 0x3A: // LD A, [HL-]
-		opcode_LD_A_r16(context.registers.HL);
+		opcode_LD_r8_r16address(context.registers.A, context.registers.HL);
 		context.registers.HL -= 1;
 		break;
 	case 0x3B: // DEC SP
@@ -1347,6 +1427,197 @@ void CPU::Step()
 		break;
 	case 0xBF: // CP A, A
 		opcode_CP_A_r8(context.registers.A);
+		break;
+	case 0xC0: // RET NZ
+		opcode_RET_cond(get_zero_flag() == 0);
+		break;
+	case 0xC1: // POP BC
+		opcode_POP_r16(context.registers.BC);
+		break;
+	case 0xC2: // JP NZ, a16
+		opcode_JP_cond(get_zero_flag() == 0);
+		break;
+	case 0xC3: // JP a16
+		opcode_JP_n16();
+		break;
+	case 0xC4: // CALL NZ, a16
+		opcode_CALL_cond(get_zero_flag() == 0);
+		break;
+	case 0xC5: // PUSH BC
+		opcode_PUSH_r16(context.registers.BC);
+		break;
+	case 0xC6: // ADD A, n8
+		opcode_ADD_A_n8();
+		break;
+	case 0xC7: // RST $00
+		opcode_RST(0x00);
+		break;
+	case 0xC8: // RET Z
+		opcode_RET_cond(get_zero_flag() == 1);
+		break;
+	case 0xC9: // RET
+		opcode_RET();
+		break;
+	case 0xCA: // JP Z, a16
+		opcode_JP_cond(get_zero_flag() == 1);
+		break;
+	case 0xCB:
+		// TODO
+		std::cout << "Attempted to call CB opcode, but it isn't implemented yet" << std::endl;
+		context.registers.PC += 2;
+		break;
+	case 0xCC: // CALL Z, a16
+		opcode_CALL_cond(get_zero_flag() == 1);
+		break;
+	case 0xCD: // CALL a16
+		opcode_CALL();
+		break;
+	case 0xCE: // ADC A, n8
+		opcode_ADC_A_n8();
+		break;
+	case 0xCF: // RST $08
+		opcode_RST(0x08);
+		break;
+	case 0xD0: // RET NC
+		opcode_RET_cond(get_carry_flag() == 0);
+		break;
+	case 0xD1: // POP DE
+		opcode_POP_r16(context.registers.DE);
+		break;
+	case 0xD2: // JP NC, a16
+		opcode_JP_cond(get_carry_flag() == 0);
+		break;
+	case 0xD3: // invalid
+		std::cout << "Invalid opcode: " << std::hex << opcode << std::endl;
+		context.registers.PC += 1;
+		break;
+	case 0xD4: // CALL NZ, a16
+		opcode_CALL_cond(get_zero_flag() == 0);
+		break;
+	case 0xD5: // PUSH DE
+		opcode_PUSH_r16(context.registers.DE);
+		break;
+	case 0xD6: // SUB A, n8
+		opcode_SUB_A_n8();
+		break;
+	case 0xD7: // RST $10
+		opcode_RST(0x10);
+		break;
+	case 0xD8: // RET C
+		opcode_RET_cond(get_carry_flag() == 1);
+		break;
+	case 0xD9: // RETI
+		opcode_RETI();
+		break;
+	case 0xDA: // JP C, a16
+		opcode_JP_cond(get_carry_flag() == 1);
+		break;
+	case 0xDB: // invalid
+		std::cout << "Invalid opcode: " << std::hex << opcode << std::endl;
+		context.registers.PC += 1;
+		break;
+	case 0xDC: // CALL C, a16
+		opcode_CALL_cond(get_carry_flag() == 1);
+		break;
+	case 0xDD: // invalid
+		std::cout << "Invalid opcode: " << std::hex << opcode << std::endl;
+		context.registers.PC += 1;
+		break;
+	case 0xDE: // SBC A, n8
+		opcode_SBC_A_n8();
+		break;
+	case 0xDF: // RST $18
+		opcode_RST(0x18);
+		break;
+	case 0xE0: // LDH [a8], A
+		opcode_LDH_n8_r8(context.registers.A);
+		break;
+	case 0xE1: // POP HL
+		opcode_POP_r16(context.registers.HL);
+		break;
+	case 0xE2: // LDH [C], A
+		opcode_LDH_addr8_r8(context.registers.C, context.registers.A);
+		break;
+	case 0xE3: // invalid
+	case 0xE4: // invalid
+		std::cout << "Invalid opcode: " << std::hex << opcode << std::endl;
+		context.registers.PC += 1;
+		break;
+	case 0xE5: // PUSH HL
+		opcode_PUSH_r16(context.registers.HL);
+		break;
+	case 0xE6: // AND A, n8
+		opcode_AND_A_n8();
+		break;
+	case 0xE7: // RST $20
+		opcode_RST(0x20);
+		break;
+	case 0xE8: // ADD SP, e8
+		opcode_ADD_SP_e8();
+		break;
+	case 0xE9: // JP HL
+		opcode_JP_hl();
+		break;
+	case 0xEA: // LD [a16], A
+		opcode_LD_addr16_A();
+		break;
+	case 0xEB:
+	case 0xEC:
+	case 0xED: // invalid
+		std::cout << "Invalid opcode: " << std::hex << opcode << std::endl;
+		context.registers.PC += 1;
+		break;
+	case 0xEE: // XOR A, n8
+		opcode_XOR_A_n8();
+		break;
+	case 0xEF: // RST $28
+		opcode_RST(0x28);
+		break;
+	case 0xF0: // LDH A, [a8]
+		opcode_LDH_r8_n8(context.registers.A);
+		break;
+	case 0xF1: // POP AF
+		opcode_POP_r16(context.registers.AF);
+		break;
+	case 0xF2: // LDH A, [C]
+		opcode_LDH_r8_addr8(context.registers.A, context.registers.C);
+		break;
+	case 0xF3: // DI
+		opcode_DI();
+		break;
+	case 0xF4: // invalid
+		std::cout << "Invalid opcode: " << std::hex << opcode << std::endl;
+		context.registers.PC += 1;
+		break;
+	case 0xF5: // PUSH AF
+		opcode_PUSH_r16(context.registers.AF);
+		break;
+	case 0xF6: // OR A, n8
+		opcode_OR_A_n8();
+		break;
+	case 0xF7: // RST $30
+		opcode_RST(0x30);
+	case 0xF8: // LD HL, SP + e8
+		opcode_LD_hl_sp_n8();
+		break;
+	case 0xF9: // LD SP, HL
+		opcode_LD_r16_r16(context.registers.SP, context.registers.HL);
+		break;
+	case 0xFA: // LD A, [a16]
+		opcode_LD_r8_n16(context.registers.A);
+		break;
+	case 0xFB: // EI
+		opcode_EI();
+		break;
+	case 0xFC:
+	case 0xFD: // invalid
+		context.registers.PC++;
+		break;
+	case 0xFE: // CP A, n8
+		opcode_CP_A_n8();
+		break;
+	case 0xFF: // RST 0x38
+		opcode_RST(0x38);
 		break;
 	default:
 		std::cout << "Unknown opcode: " << std::hex << opcode << std::endl;

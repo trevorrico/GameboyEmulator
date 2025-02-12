@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <iostream>
+#include <cstring>
 
 namespace MemoryBus
 {
