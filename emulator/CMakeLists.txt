@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION "3.22.1")
 project("emulator")
 
 add_executable("Emulator" 
+	"src/Application.cpp"
 	"src/main.cpp" 
 	"src/CPU/CPU.cpp" 
 	"src/CPU/Opcodes.cpp"

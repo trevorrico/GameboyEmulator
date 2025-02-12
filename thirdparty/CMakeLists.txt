@@ -27,4 +27,5 @@ target_include_directories(${PROJECT_NAME}
 		glad/include/ 
 		glm/ 
 		imgui/
+		portable_file_dialogs/
 )

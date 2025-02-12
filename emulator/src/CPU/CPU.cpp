@@ -18,6 +18,7 @@ void CPU::Reset()
 	this->registers.HL = 0x014D;
 	this->registers.SP = 0xFFFE;
 	this->registers.PC = 0x0100;
+	this->cycles = 0;
 }
 
 void CPU::set_zero_flag(bool set) // Z

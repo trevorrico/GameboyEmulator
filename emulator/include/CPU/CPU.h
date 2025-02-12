@@ -6,8 +6,8 @@
 class CPU
 {
 public:
-	CPU::CPU() = default;
-	CPU::~CPU() = default;
+	CPU() = default;
+	~CPU() = default;
 
 	bool Initialize();
 	void Shutdown();
@@ -67,16 +67,16 @@ public:
 	} registers;	
 	
 	uint32_t cycles;
-private:
-	void set_zero_flag(bool set); // Z
-	void set_carry_flag(bool set); // C
-	void set_subtraction_flag(bool set); // N
-	void set_half_carry_flag(bool set); // H
 
 	uint8_t get_carry_flag();
 	uint8_t get_zero_flag();
 	uint8_t get_subtraction_flag();
 	uint8_t get_half_carry_flag();
+private:
+	void set_zero_flag(bool set); // Z
+	void set_carry_flag(bool set); // C
+	void set_subtraction_flag(bool set); // N
+	void set_half_carry_flag(bool set); // H
 
 	// OPCODES FUNCTIONS
 	void opcode_LD_r8_n8(uint8_t& r8);
