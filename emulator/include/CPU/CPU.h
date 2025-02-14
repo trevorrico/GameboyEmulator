@@ -72,6 +72,9 @@ public:
 	uint8_t get_subtraction_flag();
 	uint8_t get_half_carry_flag();
 private:
+	void ProcessOpcode(uint8_t opcode);
+	void ProcessCBOpcode(uint8_t opcode);
+
 	void set_zero_flag(bool set); // Z
 	void set_carry_flag(bool set); // C
 	void set_subtraction_flag(bool set); // N
