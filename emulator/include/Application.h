@@ -24,6 +24,9 @@ public:
 
 	void Run();
 private:
+	void AddBreakpoint(uint16_t address);
+	void RemoveBreakpoint(uint16_t index);
+
 	void ConfigureImGui();
 
 	void RenderGUI();
@@ -35,7 +38,13 @@ private:
 
 	// UI variables
 	bool show_cpu_debug = true;
+	bool show_breakpoints = false;
+	uint32_t current_breakpoint_item = 0;
+	int32_t hex_val = 0;
 	bool paused = false;
+
+	// Breakpoints
+	std::vector<uint16_t> breakpoints;
 };
 
 #endif
