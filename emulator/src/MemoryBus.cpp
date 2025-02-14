@@ -23,7 +23,7 @@ void MemoryBus::Write(uint16_t address, uint8_t data)
 {
 	if(address == 0xFF02 && data == 0x81)
 	{
-		std::cout << this->Read(0xFF01) << std::endl;
+		std::cout << "!" << this->Read(0xFF01) << std::endl;
 	}
 
 	if(gb->active_cartridge != nullptr)

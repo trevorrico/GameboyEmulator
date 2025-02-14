@@ -206,9 +206,9 @@ void Application::RenderGUI()
 		if(ImGui::Button("Previous"))
 		{
 			this->current_breakpoint_item -= 1;
-			if(this->current_breakpoint_item < 0)
+			if(this->current_breakpoint_item > this->breakpoints.size()-1)
 			{
-				this->current_breakpoint_item = this->breakpoints.size()-1;
+				this->current_breakpoint_item = 0;
 			}
 		}
 
@@ -217,22 +217,44 @@ void Application::RenderGUI()
 		if(ImGui::Button("Next"))
 		{
 			this->current_breakpoint_item += 1;
-			this->current_breakpoint_item % this->breakpoints.size();
+			if(this->current_breakpoint_item > this->breakpoints.size()-1)
+			{
+				this->current_breakpoint_item = this->breakpoints.size() - 1;
+			}
 		}
 
-		ImGui::SliderInt("Address", (int*)&this->hex_val, 0, 0xFFFF, "0x%04x");
+		ImGui::InputText("Address", this->hex_val.data(), 5 * sizeof(char));
 
 		if(ImGui::Button("Add"))
 		{
-			this->AddBreakpoint(this->hex_val);
+			uint16_t val = 0;
+			int mult = 1;
+
+			for(int i = this->hex_val.size() - 1; i >= 0; i--)
+			{
+				int d = 0;
+				if(this->hex_val[i] >= '0' && this->hex_val[i] <= '9')
+				{
+					d = std::clamp(this->hex_val[i] - '0', 0, 10);
+				}
+				else if(this->hex_val[i] >= 'A' && this->hex_val[i] <= 'F')
+				{
+					d = std::clamp(this->hex_val[i] - 'A', 0, 10) + 10;
+				}
+				
+				val += d * mult;
+				mult *= 0x10;
+			}
+
+			this->AddBreakpoint(val);
 		}
 		
 		ImGui::SameLine();
 
-		if(ImGui::Button("Remove"))
+		if(ImGui::Button("Remove") && this->breakpoints.size() > 0)
 		{
 			this->RemoveBreakpoint(this->current_breakpoint_item);
-			this->current_breakpoint_item % this->breakpoints.size();
+			this->current_breakpoint_item % (this->breakpoints.size() - 1);
 		}
 
 		ImGui::End();

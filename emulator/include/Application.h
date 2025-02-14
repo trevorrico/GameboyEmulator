@@ -40,7 +40,7 @@ private:
 	bool show_cpu_debug = true;
 	bool show_breakpoints = false;
 	uint32_t current_breakpoint_item = 0;
-	int32_t hex_val = 0;
+	std::string hex_val = "0000";
 	bool paused = false;
 
 	// Breakpoints
