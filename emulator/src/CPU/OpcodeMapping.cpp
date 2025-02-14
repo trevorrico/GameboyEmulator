@@ -1048,6 +1048,38 @@ void CPU::ProcessCBOpcode(uint8_t opcode)
 void CPU::Step()
 {
 	uint8_t opcode = this->gb->mmu->Read(this->registers.PC);
+
+	if(this->log_lines <= 100)
+	{
+		this->log_string << "A: " << std::hex << this->registers.A 
+			<< " F: " << std::hex << (uint32_t)this->registers.F 
+			<< " B: " << std::hex << (uint32_t)this->registers.B 
+			<< " C: " << std::hex << (uint32_t)this->registers.C 
+			<< " D: " << std::hex << (uint32_t)this->registers.D
+			<< " E: " << std::hex << (uint32_t)this->registers.E
+			<< " H: " << std::hex << (uint32_t)this->registers.H
+			<< " L: " << std::hex << (uint32_t)this->registers.L
+			<< " SP: " << std::hex << (uint32_t)this->registers.SP
+			<< " PC: 00:" << std::hex << (uint32_t)this->registers.PC
+			<< " (" << std::hex << (uint32_t)this->gb->mmu->Read(this->registers.PC) << (uint32_t)this->gb->mmu->Read(this->registers.PC + 1) << (uint32_t)this->gb->mmu->Read(this->registers.PC + 2) << (uint32_t)this->gb->mmu->Read(this->registers.PC + 3) << ")";
+		
+		this->log_lines++;
+		if(this->log_lines == 100)
+		{
+			std::ofstream out;
+			out.open("log.txt", std::ofstream::out | std::ofstream::trunc);
+
+			out << this->log_string.rdbuf();
+
+			out.close();
+			this->log_lines++;
+		}
+	}
+	else
+	{
+		return;
+	}
+
 	if(opcode == 0xCB)
 	{
 		this->registers.PC++;

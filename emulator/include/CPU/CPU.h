@@ -2,6 +2,9 @@
 #define EMULATOR_CPU_H_
 
 #include <stdint.h>
+#include <string>
+#include <sstream>
+#include <fstream>
 
 class GameBoy;
 
@@ -72,6 +75,9 @@ public:
 	uint8_t get_subtraction_flag();
 	uint8_t get_half_carry_flag();
 private:
+	std::stringstream log_string;
+	uint32_t log_lines = 0;
+
 	void ProcessOpcode(uint8_t opcode);
 	void ProcessCBOpcode(uint8_t opcode);
 

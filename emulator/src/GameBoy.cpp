@@ -32,7 +32,7 @@ void GameBoy::Update(float dt)
 			cycleCount = 41943;
 		}
 
-		cycleCount = 1;
+		//cycleCount = 1;
 
 		uint32_t currentCount = this->cpu->cycles;
 		while(this->cpu->cycles < currentCount + cycleCount)
