@@ -1,9 +1,10 @@
 #include "CPU/CPU.h"
 #include "MemoryBus.h"
+#include "GameBoy.h"
 
 void CPU::Step()
 {
-	uint8_t opcode = MemoryBus::Read(this->registers.PC);
+	uint8_t opcode = this->gb->mmu->Read(this->registers.PC);
 	switch(opcode)
 	{
 	case 0x00: // NOP
@@ -650,6 +651,7 @@ void CPU::Step()
 		break;
 	case 0xD3: // invalid
 		this->registers.PC += 1;
+		this->cycles += 1;
 		break;
 	case 0xD4: // CALL NZ, a16
 		opcode_CALL_cond(get_zero_flag() == 0);
@@ -674,12 +676,14 @@ void CPU::Step()
 		break;
 	case 0xDB: // invalid
 		this->registers.PC += 1;
+		this->cycles += 1;
 		break;
 	case 0xDC: // CALL C, a16
 		opcode_CALL_cond(get_carry_flag() == 1);
 		break;
 	case 0xDD: // invalid
 		this->registers.PC += 1;
+		this->cycles += 1;
 		break;
 	case 0xDE: // SBC A, n8
 		opcode_SBC_A_n8();
@@ -699,6 +703,7 @@ void CPU::Step()
 	case 0xE3: // invalid
 	case 0xE4: // invalid
 		this->registers.PC += 1;
+		this->cycles += 1;
 		break;
 	case 0xE5: // PUSH HL
 		opcode_PUSH_r16(this->registers.HL);
@@ -722,6 +727,7 @@ void CPU::Step()
 	case 0xEC:
 	case 0xED: // invalid
 		this->registers.PC += 1;
+		this->cycles += 1;
 		break;
 	case 0xEE: // XOR A, n8
 		opcode_XOR_A_n8();
@@ -743,6 +749,7 @@ void CPU::Step()
 		break;
 	case 0xF4: // invalid
 		this->registers.PC += 1;
+		this->cycles += 1;
 		break;
 	case 0xF5: // PUSH AF
 		opcode_PUSH_r16(this->registers.AF);
@@ -767,6 +774,7 @@ void CPU::Step()
 	case 0xFC:
 	case 0xFD: // invalid
 		this->registers.PC++;
+		this->cycles += 1;
 		break;
 	case 0xFE: // CP A, n8
 		opcode_CP_A_n8();

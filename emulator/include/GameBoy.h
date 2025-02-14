@@ -1,0 +1,30 @@
+#ifndef GAMEBOY_H_
+#define GAMEBOY_H_
+
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <vector>
+
+#include "MemoryBus.h"
+#include "CPU/CPU.h"
+#include "Cartridge.h"
+
+class GameBoy
+{
+public:
+	GameBoy();
+	~GameBoy();
+
+	void Update(float dt);
+
+	CPU* cpu = nullptr;
+	MemoryBus* mmu = nullptr;
+	Cartridge* active_cartridge = nullptr;
+	
+	bool LoadROM(std::string rom_path);
+private:
+
+};
+
+#endif

@@ -7,8 +7,7 @@ Application::Application()
 
 Application::~Application()
 {
-	cpu.Shutdown();
-	MemoryBus::Shutdown();
+	delete this->gameboy;
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -37,15 +36,28 @@ int Application::Initialize()
 
 	this->ConfigureImGui();
 
-	MemoryBus::Initialize();
-	cpu.Initialize();
+	this->gameboy = new GameBoy();
 	return 0;
 }
 
 void Application::Run()
 {
+	float dt = 0.0;
+	float lastTime = glfwGetTime();
 	while(glfwWindowShouldClose(this->window) == false)
 	{
+		dt = glfwGetTime() - lastTime;
+		lastTime = glfwGetTime();
+
+		if(paused == false)
+		{
+			this->gameboy->Update(dt);
+			if(this->gameboy->cpu->registers.PC == 0xC243)
+			{
+				paused = true;
+			}
+		}
+
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -98,7 +110,7 @@ void Application::RenderGUI()
 				{
 					std::string rom_path = files[0];
 					std::cout << "Opening ROM: " << rom_path << std::endl;
-					// TODO
+					this->gameboy->LoadROM(rom_path);
 				}
 			}
 
@@ -129,20 +141,46 @@ void Application::RenderGUI()
 	{
 		ImGui::Begin("CPU Debug Viewer", &show_cpu_debug);
 		ImGui::Text("Registers");
-		ImGui::Text("AF: 0x%04X", cpu.registers.AF);
-		ImGui::Text("BC: 0x%04X", cpu.registers.BC);
-		ImGui::Text("DE: 0x%04X", cpu.registers.DE);
-		ImGui::Text("HL: 0x%04X", cpu.registers.HL);
-		ImGui::Text("SP: 0x%04X", cpu.registers.SP);
-		ImGui::Text("PC: 0x%04X", cpu.registers.PC);
-		ImGui::Text("Z: %u | N: %u | H: %u | C: %u", cpu.get_zero_flag(), cpu.get_subtraction_flag(), cpu.get_half_carry_flag(), cpu.get_carry_flag());
-		ImGui::Text("Cycle: %u", cpu.cycles);
+		ImGui::Text("AF: 0x%04X", gameboy->cpu->registers.AF);
+		ImGui::Text("BC: 0x%04X", gameboy->cpu->registers.BC);
+		ImGui::Text("DE: 0x%04X", gameboy->cpu->registers.DE);
+		ImGui::Text("HL: 0x%04X", gameboy->cpu->registers.HL);
+		ImGui::Text("SP: 0x%04X", gameboy->cpu->registers.SP);
+		ImGui::Text("PC: 0x%04X", gameboy->cpu->registers.PC);
+		ImGui::Text("OP: 0x%02X", gameboy->mmu->Read(gameboy->cpu->registers.PC));
+		ImGui::Text("Z: %u | N: %u | H: %u | C: %u", 
+			gameboy->cpu->get_zero_flag(), 
+			gameboy->cpu->get_subtraction_flag(), 
+			gameboy->cpu->get_half_carry_flag(), 
+			gameboy->cpu->get_carry_flag());
+		
+		ImGui::Text("Cycle: %u", gameboy->cpu->cycles);
+
+		if(ImGui::Button("Cycle"))
+		{
+			this->gameboy->Update(0.0);
+		}
+		if(paused)
+		{
+			if(ImGui::Button("Unpause"))
+			{
+				paused = !paused;
+			}
+		}
+		else
+		{
+			if(ImGui::Button("Pause"))
+			{
+				paused = !paused;
+			}
+		}
+
 		ImGui::End();
 	}
 
 	// Render GUI
 	ImGui::Render();
-	int displayW, displayH;
-	glfwGetFramebufferSize(window, &displayW, &displayH);
+	int display_w, display_h;
+	glfwGetFramebufferSize(window, &display_w, &display_h);
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

@@ -3,14 +3,13 @@
 
 #include <stdint.h>
 
+class GameBoy;
+
 class CPU
 {
 public:
-	CPU() = default;
-	~CPU() = default;
-
-	bool Initialize();
-	void Shutdown();
+	CPU(GameBoy* gb);
+	~CPU();
 
 	void Reset();
 	void Step();
@@ -151,6 +150,8 @@ private:
 	void opcode_EI();
 	void opcode_DI();
 	void opcode_RETI();
+
+	GameBoy* gb;
 };
 
 #endif

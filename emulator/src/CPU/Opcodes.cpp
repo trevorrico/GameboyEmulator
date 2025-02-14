@@ -1,17 +1,18 @@
 #include "CPU/CPU.h"
 #include "MemoryBus.h"
+#include "GameBoy.h"
 
 void CPU::opcode_LD_r8_n8(uint8_t& r8)
 {
-	r8 = MemoryBus::Read(this->registers.PC + 1);
+	r8 = this->gb->mmu->Read(this->registers.PC + 1);
 	this->registers.PC += 2;
 	this->cycles += 2;
 }
 
 void CPU::opcode_LD_r16(uint16_t& r16)
 {
-	uint8_t low = MemoryBus::Read(this->registers.PC + 1);
-	uint8_t high = MemoryBus::Read(this->registers.PC + 2);
+	uint8_t low = this->gb->mmu->Read(this->registers.PC + 1);
+	uint8_t high = this->gb->mmu->Read(this->registers.PC + 2);
 	r16 = (high << 8) | low;
 	this->registers.PC += 3;
 	this->cycles += 3;
@@ -19,15 +20,15 @@ void CPU::opcode_LD_r16(uint16_t& r16)
 
 void CPU::opcode_LD_r16_A(uint16_t& r16)
 {
-	MemoryBus::Write(r16, this->registers.A);
+	this->gb->mmu->Write(r16, this->registers.A);
 	this->registers.PC += 1;
 	this->cycles += 2;
 }
 
 void CPU::opcode_LD_addr16_A()
 {
-	uint8_t low = MemoryBus::Read(this->registers.PC + 1);
-	uint8_t high = MemoryBus::Read(this->registers.PC + 2);
+	uint8_t low = this->gb->mmu->Read(this->registers.PC + 1);
+	uint8_t high = this->gb->mmu->Read(this->registers.PC + 2);
 	uint16_t r16 = (high << 8) | low;
 	
 	opcode_LD_r16_A(r16);
@@ -38,15 +39,15 @@ void CPU::opcode_LD_addr16_A()
 
 void CPU::opcode_LD_r8_r16address(uint8_t& r8, uint16_t r16address)
 {
-	r8 = MemoryBus::Read(r16address);
+	r8 = this->gb->mmu->Read(r16address);
 	this->registers.PC += 1;
 	this->cycles += 2;
 }
 
 void CPU::opcode_LD_r8_n16(uint8_t& r8)
 {
-	uint8_t low = MemoryBus::Read(this->registers.PC + 1);
-	uint8_t high = MemoryBus::Read(this->registers.PC + 2);
+	uint8_t low = this->gb->mmu->Read(this->registers.PC + 1);
+	uint8_t high = this->gb->mmu->Read(this->registers.PC + 2);
 
 	uint16_t address = (high << 8) | low; 
 	opcode_LD_r8_r16address(r8, address);
@@ -57,13 +58,13 @@ void CPU::opcode_LD_r8_n16(uint8_t& r8)
 
 void CPU::opcode_LD_n16_r16(uint16_t& r16)
 {
-	uint8_t low = MemoryBus::Read(this->registers.PC + 1);
-	uint8_t high = MemoryBus::Read(this->registers.PC + 2);
+	uint8_t low = this->gb->mmu->Read(this->registers.PC + 1);
+	uint8_t high = this->gb->mmu->Read(this->registers.PC + 2);
 
 	uint16_t address = (high << 8) | low; 
 
-	MemoryBus::Write(address, r16 & 0x00FF);
-	MemoryBus::Write(address + 1, r16 >> 8);
+	this->gb->mmu->Write(address, r16 & 0x00FF);
+	this->gb->mmu->Write(address + 1, r16 >> 8);
 
 	this->registers.PC += 3;
 	this->cycles += 5;
@@ -87,8 +88,8 @@ void CPU::opcode_LD_r16_r16(uint16_t& r8_0, uint16_t& r8_1)
 
 void CPU::opcode_LD_hl_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
-	MemoryBus::Write(this->registers.HL, n8);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
+	this->gb->mmu->Write(this->registers.HL, n8);
 
 	this->registers.PC += 2;
 	this->cycles += 3;
@@ -96,8 +97,8 @@ void CPU::opcode_LD_hl_n8()
 
 void CPU::opcode_LD_hl_sp_n8()
 {
-	int8_t e8 = static_cast<int8_t>(MemoryBus::Read(this->registers.PC + 1));
-	MemoryBus::Write(this->registers.HL, this->registers.SP + e8);
+	int8_t e8 = static_cast<int8_t>(this->gb->mmu->Read(this->registers.PC + 1));
+	this->gb->mmu->Write(this->registers.HL, this->registers.SP + e8);
 	
 	set_carry_flag((this->registers.SP & 0xFF) + e8 > 0xFF);
 	set_half_carry_flag((this->registers.SP & 0x0F) + e8 > 0x0F);
@@ -111,7 +112,7 @@ void CPU::opcode_LD_hl_sp_n8()
 
 void CPU::opcode_LD_hl_r8(uint8_t& r8)
 {
-	MemoryBus::Write(this->registers.HL, r8);
+	this->gb->mmu->Write(this->registers.HL, r8);
 
 	this->registers.PC += 1;
 	this->cycles += 2;
@@ -119,7 +120,7 @@ void CPU::opcode_LD_hl_r8(uint8_t& r8)
 
 void CPU::opcode_LDH_addr8_r8(uint8_t& addr, uint8_t& r8)
 {
-	MemoryBus::Write(r8 + 0xFF00, r8);
+	this->gb->mmu->Write(r8 + 0xFF00, r8);
 
 	this->registers.PC += 1;
 	this->cycles += 2;
@@ -127,7 +128,7 @@ void CPU::opcode_LDH_addr8_r8(uint8_t& addr, uint8_t& r8)
 
 void CPU::opcode_LDH_r8_addr8(uint8_t& r8, uint8_t addr8)
 {
-	r8 = MemoryBus::Read(addr8 + 0xFF00);
+	r8 = this->gb->mmu->Read(addr8 + 0xFF00);
 
 	this->registers.PC += 1;
 	this->cycles += 2;
@@ -135,7 +136,7 @@ void CPU::opcode_LDH_r8_addr8(uint8_t& r8, uint8_t addr8)
 
 void CPU::opcode_LDH_n8_r8(uint8_t& r8)
 {
-	uint8_t addr = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t addr = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_LDH_addr8_r8(addr, r8);
 
 	this->registers.PC += 1;
@@ -144,7 +145,7 @@ void CPU::opcode_LDH_n8_r8(uint8_t& r8)
 
 void CPU::opcode_LDH_r8_n8(uint8_t& r8)
 {
-	uint8_t addr = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t addr = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_LDH_r8_addr8(r8, addr);
 
 	this->registers.PC += 1;
@@ -173,7 +174,7 @@ void CPU::opcode_INC_r8(uint8_t& r8)
 
 void CPU::opcode_INC_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 
 	set_half_carry_flag((value & 0x0F) == 0x0F);
 
@@ -182,7 +183,7 @@ void CPU::opcode_INC_hl()
 	set_subtraction_flag(false);
 	set_zero_flag(value == 0);
 
-	MemoryBus::Write(this->registers.HL, value);
+	this->gb->mmu->Write(this->registers.HL, value);
 
 	this->registers.PC += 1;
 	this->cycles += 3;
@@ -211,7 +212,7 @@ void CPU::opcode_DEC_r16(uint16_t& r16)
 
 void CPU::opcode_DEC_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 
 	set_half_carry_flag((value & 0x0F) == 0x00);
 
@@ -220,7 +221,7 @@ void CPU::opcode_DEC_hl()
 	set_subtraction_flag(true);
 	set_zero_flag(value == 0);
 
-	MemoryBus::Write(this->registers.HL, value);
+	this->gb->mmu->Write(this->registers.HL, value);
 
 	this->registers.PC += 1;
 	this->cycles += 3;
@@ -254,7 +255,7 @@ void CPU::opcode_ADD_A_r8(uint8_t& r8)
 
 void CPU::opcode_ADD_SP_e8()
 {
-	int8_t e8 = static_cast<int8_t>(MemoryBus::Read(this->registers.PC + 1));
+	int8_t e8 = static_cast<int8_t>(this->gb->mmu->Read(this->registers.PC + 1));
 	
 	set_carry_flag((this->registers.SP & 0xFF) + e8 > 0xFF);
 	set_half_carry_flag((this->registers.SP & 0x0F) + e8 > 0x0F);
@@ -270,7 +271,7 @@ void CPU::opcode_ADD_SP_e8()
 
 void CPU::opcode_ADD_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_ADD_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -278,7 +279,7 @@ void CPU::opcode_ADD_A_n8()
 
 void CPU::opcode_ADD_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_ADD_A_r8(value);
 	this->cycles += 1;
 }
@@ -293,7 +294,7 @@ void CPU::opcode_ADC_A_r8(uint8_t& r8)
 
 void CPU::opcode_ADC_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_ADC_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -301,7 +302,7 @@ void CPU::opcode_ADC_A_n8()
 
 void CPU::opcode_ADC_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_ADC_A_r8(value);
 	this->cycles += 1;
 }
@@ -322,7 +323,7 @@ void CPU::opcode_SUB_A_r8(uint8_t& r8)
 
 void CPU::opcode_SUB_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_SUB_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -330,7 +331,7 @@ void CPU::opcode_SUB_A_n8()
 
 void CPU::opcode_SUB_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_SUB_A_r8(value);
 	this->cycles += 1;
 }
@@ -345,7 +346,7 @@ void CPU::opcode_SBC_A_r8(uint8_t& r8)
 
 void CPU::opcode_SBC_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_SBC_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -353,7 +354,7 @@ void CPU::opcode_SBC_A_n8()
 
 void CPU::opcode_SBC_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_SBC_A_r8(value);
 	this->cycles += 1;
 }
@@ -373,7 +374,7 @@ void CPU::opcode_AND_A_r8(uint8_t& r8)
 
 void CPU::opcode_AND_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_AND_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -381,7 +382,7 @@ void CPU::opcode_AND_A_n8()
 
 void CPU::opcode_AND_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_AND_A_r8(value);
 	this->cycles += 1;
 }
@@ -401,7 +402,7 @@ void CPU::opcode_XOR_A_r8(uint8_t& r8)
 
 void CPU::opcode_XOR_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_XOR_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -409,7 +410,7 @@ void CPU::opcode_XOR_A_n8()
 
 void CPU::opcode_XOR_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_XOR_A_r8(value);
 	this->cycles += 1;
 }
@@ -429,7 +430,7 @@ void CPU::opcode_OR_A_r8(uint8_t& r8)
 
 void CPU::opcode_OR_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_OR_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -437,7 +438,7 @@ void CPU::opcode_OR_A_n8()
 
 void CPU::opcode_OR_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_OR_A_r8(value);
 	this->cycles += 1;
 }
@@ -457,7 +458,7 @@ void CPU::opcode_CP_A_r8(uint8_t& r8)
 
 void CPU::opcode_CP_A_n8()
 {
-	uint8_t n8 = MemoryBus::Read(this->registers.PC + 1);
+	uint8_t n8 = this->gb->mmu->Read(this->registers.PC + 1);
 	opcode_CP_A_r8(n8);
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -465,7 +466,7 @@ void CPU::opcode_CP_A_n8()
 
 void CPU::opcode_CP_A_hl()
 {
-	uint8_t value = MemoryBus::Read(this->registers.HL);
+	uint8_t value = this->gb->mmu->Read(this->registers.HL);
 	opcode_CP_A_r8(value);
 	this->cycles += 1;
 }
@@ -528,9 +529,9 @@ void CPU::opcode_RRA()
 
 void CPU::opcode_JR()
 {
-	int8_t offset = static_cast<int8_t>(MemoryBus::Read(this->registers.PC + 1));
+	int8_t offset = static_cast<int8_t>(this->gb->mmu->Read(this->registers.PC + 1));
 
-	this->registers.PC += 1 + offset;
+	this->registers.PC += 2 + offset;
 	this->cycles += 3;
 }
 
@@ -617,9 +618,9 @@ void CPU::opcode_CCF()
 
 void CPU::opcode_POP_r16(uint16_t& r16)
 {
-	uint8_t low = MemoryBus::Read(this->registers.SP);
+	uint8_t low = this->gb->mmu->Read(this->registers.SP);
 	this->registers.SP++;
-	uint8_t high = MemoryBus::Read(this->registers.SP);
+	uint8_t high = this->gb->mmu->Read(this->registers.SP);
 	this->registers.SP++;
 
 	r16 = (high << 8) | low;
@@ -631,9 +632,9 @@ void CPU::opcode_POP_r16(uint16_t& r16)
 void CPU::opcode_PUSH_r16(uint16_t& r16)
 {
 	this->registers.SP--;
-	MemoryBus::Write(this->registers.SP, r16 >> 8);
+	this->gb->mmu->Write(this->registers.SP, r16 >> 8);
 	this->registers.SP--;
-	MemoryBus::Write(this->registers.SP, (uint8_t)(r16 & 0x00FF));
+	this->gb->mmu->Write(this->registers.SP, (uint8_t)(r16 & 0x00FF));
 
 	this->registers.PC += 1;
 	this->cycles += 4;
@@ -668,8 +669,8 @@ void CPU::opcode_JP_r16(uint16_t& r16)
 
 void CPU::opcode_JP_n16()
 {
-	uint8_t low = MemoryBus::Read(this->registers.PC + 1);
-	uint8_t high = MemoryBus::Read(this->registers.PC + 2);
+	uint8_t low = this->gb->mmu->Read(this->registers.PC + 1);
+	uint8_t high = this->gb->mmu->Read(this->registers.PC + 2);
 
 	uint16_t value = (high << 8) | low;
 	opcode_JP_r16(value);
@@ -696,16 +697,15 @@ void CPU::opcode_JP_hl()
 
 void CPU::opcode_CALL()
 {
-	uint8_t low = MemoryBus::Read(this->registers.PC + 1);
-	uint8_t high = MemoryBus::Read(this->registers.PC + 2);
-	this->registers.PC += 2;
+	uint8_t low = this->gb->mmu->Read(this->registers.PC + 1);
+	uint8_t high = this->gb->mmu->Read(this->registers.PC + 2);
+	this->registers.PC += 3;
 
 	uint16_t value = (high << 8) | low;
 
-	opcode_PUSH_r16(value);
-	opcode_JP_r16(value);
-
-	this->cycles -= 2;
+	opcode_PUSH_r16(this->registers.PC);
+	this->registers.PC = value;
+	this->cycles += 2;
 }
 
 void CPU::opcode_CALL_cond(uint8_t cond)
@@ -732,11 +732,15 @@ void CPU::opcode_RST(uint16_t address)
 void CPU::opcode_EI()
 {
 	// TODO
+	this->registers.PC += 1;
+	this->cycles += 1;
 }
 
 void CPU::opcode_DI()
 {
 	// TODO
+	this->registers.PC += 1;
+	this->cycles += 1;
 }
 
 void CPU::opcode_RETI()

@@ -9,6 +9,8 @@ add_executable("Emulator"
 	"src/CPU/Opcodes.cpp"
 	"src/CPU/OpcodeMapping.cpp"
 	"src/MemoryBus.cpp"
+	"src/GameBoy.cpp"
+	"src/Cartridge.cpp"
 )
 
 set_property(TARGET "Emulator" PROPERTY CXX_STANDARD 17)

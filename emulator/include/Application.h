@@ -10,8 +10,7 @@
 
 #include <portable-file-dialogs.h>
 
-#include "MemoryBus.h"
-#include "CPU/CPU.h"
+#include "GameBoy.h"
 
 #include <iostream>
 
@@ -32,10 +31,11 @@ private:
 	GLFWwindow* window;
 
 	// Gameboy variables
-	CPU cpu;
+	GameBoy* gameboy;
 
 	// UI variables
 	bool show_cpu_debug = true;
+	bool paused = false;
 };
 
 #endif
