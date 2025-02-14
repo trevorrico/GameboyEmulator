@@ -749,3 +749,260 @@ void CPU::opcode_RETI()
 	opcode_EI();
 	opcode_RET();
 }
+
+// CB
+void CPU::opcode_RLC(uint8_t& r8)
+{
+	uint8_t carry = (r8 & 0x80) >> 7;
+	r8 = (r8 << 1) | carry;
+
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(carry);
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_RLC_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_RLC(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+	
+	this->cycles += 2;
+}
+
+void CPU::opcode_RRC(uint8_t& r8)
+{
+	uint8_t carry = (r8 & 0x01);
+	r8 = (r8 >> 1) | (carry << 7);
+
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(carry);
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_RRC_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_RRC(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_RL(uint8_t& r8)
+{
+	uint8_t bit = (r8 & 0x80) >> 7;
+
+	uint8_t carry = get_carry_flag();
+
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(bit);
+
+	r8 = (r8 << 1) | carry;
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_RL_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_RL(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_RR(uint8_t& r8)
+{
+	uint8_t bit = (r8 & 0x01);
+
+	uint8_t carry = get_carry_flag();
+
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(bit);
+
+	r8 = (r8 >> 1) | (carry << 7);
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_RR_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_RR(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_SLA(uint8_t& r8)
+{
+	uint8_t bit = (r8 & 0x80) >> 7;
+
+	uint8_t carry = get_carry_flag();
+	
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(bit);
+
+	r8 << 1;
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_SLA_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_SLA(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_SRA(uint8_t& r8)
+{
+	uint8_t bit = (r8 & 0x01);
+	uint8_t high_bit = (r8 & 0x80);
+
+	uint8_t carry = get_carry_flag();
+	
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(bit);
+
+	r8 = (r8 >> 1) | high_bit;
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_SRA_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_SRA(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_SWAP(uint8_t& r8)
+{
+	uint8_t upper = (r8 & 0xF0) >> 4;
+	uint8_t lower = (r8 & 0x0F) << 4;
+	
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(false);
+
+	r8 = upper | lower;
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_SWAP_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_SWAP(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_SRL(uint8_t& r8)
+{
+	uint8_t bit = (r8 & 0x01);
+
+	uint8_t carry = get_carry_flag();
+	
+	set_zero_flag(r8 == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+	set_carry_flag(bit);
+
+	r8 = (r8 >> 1);
+
+	this->cycles += 2;
+	this->registers.PC += 1;
+}
+
+void CPU::opcode_SRL_hl()
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_SRL(val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_BIT(uint8_t u3, uint8_t r8)
+{
+	uint8_t bit = (r8 >> u3) & 0x01;
+
+	set_zero_flag(bit == 0);
+	set_subtraction_flag(false);
+	set_half_carry_flag(false);
+
+	this->registers.PC += 1;
+	this->cycles += 2;
+}
+
+void CPU::opcode_BIT_hl(uint8_t u3)
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_BIT(u3, val);
+
+	this->cycles += 1;
+}
+
+void CPU::opcode_RES(uint8_t u3, uint8_t& r8)
+{
+	r8 &= 0xFE << u3;
+
+	this->registers.PC += 1;
+	this->cycles += 2;
+}
+
+void CPU::opcode_RES_hl(uint8_t u3)
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_RES(u3, val);
+	this->gb->mmu->Write(this->registers.HL, val);
+
+	this->cycles += 2;
+}
+
+void CPU::opcode_SET(uint8_t u3, uint8_t& r8)
+{
+	r8 |= 0x01 << u3;
+
+	this->registers.PC += 1;
+	this->cycles += 2;
+}
+
+void CPU::opcode_SET_hl(uint8_t u3)
+{
+	uint8_t val = this->gb->mmu->Read(this->registers.HL);
+	opcode_SET(u3, val);
+	this->gb->mmu->Write(this->registers.HL, val);
+	
+	this->cycles += 2;
+}

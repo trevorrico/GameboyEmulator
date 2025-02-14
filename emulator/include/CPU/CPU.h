@@ -151,6 +151,30 @@ private:
 	void opcode_DI();
 	void opcode_RETI();
 
+	// CB opcodes
+	void opcode_RLC(uint8_t& r8);
+	void opcode_RLC_hl();
+	void opcode_RRC(uint8_t& r8);
+	void opcode_RRC_hl();
+	void opcode_RL(uint8_t& r8);
+	void opcode_RL_hl();
+	void opcode_RR(uint8_t& r8);
+	void opcode_RR_hl();
+	void opcode_SLA(uint8_t& r8);
+	void opcode_SLA_hl();
+	void opcode_SRA(uint8_t& r8);
+	void opcode_SRA_hl();
+	void opcode_SWAP(uint8_t& r8);
+	void opcode_SWAP_hl();
+	void opcode_SRL(uint8_t& r8);
+	void opcode_SRL_hl();
+	void opcode_BIT(uint8_t u3, uint8_t r8);
+	void opcode_BIT_hl(uint8_t u3);
+	void opcode_RES(uint8_t u3, uint8_t& r8);
+	void opcode_RES_hl(uint8_t u3);
+	void opcode_SET(uint8_t u3, uint8_t& r8);
+	void opcode_SET_hl(uint8_t u3);
+
 	GameBoy* gb;
 };
 

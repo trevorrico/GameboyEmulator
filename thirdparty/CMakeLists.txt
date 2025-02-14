@@ -29,3 +29,8 @@ target_include_directories(${PROJECT_NAME}
 		imgui/
 		portable_file_dialogs/
 )
+
+# Fix imm 
+if(NOT (CMAKE_GENERATOR MATCHES "Visual Studio"))
+	target_link_libraries(${PROJECT_NAME} imm32)
+endif()
