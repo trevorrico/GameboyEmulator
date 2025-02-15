@@ -12,10 +12,10 @@ CPU::~CPU()
 
 void CPU::Reset()
 {
-	this->registers.AF = 0x1180;
-	this->registers.BC = 0x0000;
-	this->registers.DE = 0xFF56;
-	this->registers.HL = 0x000D;
+	this->registers.AF = 0x01B0;
+	this->registers.BC = 0x0013;
+	this->registers.DE = 0x00D8;
+	this->registers.HL = 0x014D;
 	this->registers.SP = 0xFFFE;
 	this->registers.PC = 0x0100;
 	this->cycles = 0;

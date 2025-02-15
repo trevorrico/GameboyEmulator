@@ -98,7 +98,7 @@ void CPU::opcode_LD_hl_n8()
 void CPU::opcode_LD_hl_sp_n8()
 {
 	int8_t e8 = static_cast<int8_t>(this->gb->mmu->Read(this->registers.PC + 1));
-	this->gb->mmu->Write(this->registers.HL, this->registers.SP + e8);
+	this->registers.HL = this->registers.SP + e8;
 	
 	set_carry_flag((this->registers.SP & 0xFF) + e8 > 0xFF);
 	set_half_carry_flag((this->registers.SP & 0x0F) + e8 > 0x0F);
@@ -120,7 +120,7 @@ void CPU::opcode_LD_hl_r8(uint8_t& r8)
 
 void CPU::opcode_LDH_addr8_r8(uint8_t& addr, uint8_t& r8)
 {
-	this->gb->mmu->Write(r8 + 0xFF00, r8);
+	this->gb->mmu->Write(0xFF00 + addr, r8);
 
 	this->registers.PC += 1;
 	this->cycles += 2;
@@ -567,7 +567,7 @@ void CPU::opcode_DAA()
 	}
 	else
 	{
-		if(get_half_carry_flag() || this->registers.A & 0x0F > 0x09)
+		if(get_half_carry_flag() || (this->registers.A & 0x0F) > 0x09)
 		{
 			adjustment += 0x06;
 		}
@@ -580,6 +580,9 @@ void CPU::opcode_DAA()
 
 		this->registers.A += adjustment;
 	}
+
+	set_zero_flag(this->registers.A == 0);
+	set_half_carry_flag(false);
 
 	this->registers.PC += 1;
 	this->cycles += 1;
@@ -627,6 +630,19 @@ void CPU::opcode_POP_r16(uint16_t& r16)
 
 	this->registers.PC += 1;
 	this->cycles += 3;
+}
+
+void CPU::opcode_POP_AF()
+{
+	opcode_POP_r16(this->registers.AF);
+	this->registers.F &= 0xF0; // lower 4 bits of F are always 0
+
+	uint8_t low = this->registers.AF & 0x00FF;
+
+	set_zero_flag(low >> 7);
+	set_subtraction_flag((low >> 6) & 0x01);
+	set_half_carry_flag((low >> 5) & 0x01);
+	set_carry_flag((low >> 4) & 0x01);
 }
 
 void CPU::opcode_PUSH_r16(uint16_t& r16)

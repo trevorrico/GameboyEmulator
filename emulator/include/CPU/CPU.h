@@ -2,6 +2,7 @@
 #define EMULATOR_CPU_H_
 
 #include <stdint.h>
+#include <iomanip>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -74,9 +75,10 @@ public:
 	uint8_t get_zero_flag();
 	uint8_t get_subtraction_flag();
 	uint8_t get_half_carry_flag();
+
+	uint32_t log_lines = 0;
 private:
 	std::stringstream log_string;
-	uint32_t log_lines = 0;
 
 	void ProcessOpcode(uint8_t opcode);
 	void ProcessCBOpcode(uint8_t opcode);
@@ -146,6 +148,7 @@ private:
 	void opcode_SCF();
 	void opcode_CCF();
 	void opcode_POP_r16(uint16_t& r16);
+	void opcode_POP_AF();
 	void opcode_PUSH_r16(uint16_t& r16);
 	void opcode_RET();
 	void opcode_RET_cond(uint8_t cond);

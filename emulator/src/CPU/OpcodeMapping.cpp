@@ -733,7 +733,7 @@ void CPU::ProcessOpcode(uint8_t opcode)
 		opcode_LDH_r8_n8(this->registers.A);
 		break;
 	case 0xF1: // POP AF
-		opcode_POP_r16(this->registers.AF);
+		opcode_POP_AF();
 		break;
 	case 0xF2: // LDH A, [C]
 		opcode_LDH_r8_addr8(this->registers.A, this->registers.C);
@@ -1049,22 +1049,26 @@ void CPU::Step()
 {
 	uint8_t opcode = this->gb->mmu->Read(this->registers.PC);
 
-	if(this->log_lines <= 100)
+	/*
+	if(this->log_lines < 1258895)
 	{
-		this->log_string << "A: " << std::hex << this->registers.A 
-			<< " F: " << std::hex << (uint32_t)this->registers.F 
-			<< " B: " << std::hex << (uint32_t)this->registers.B 
-			<< " C: " << std::hex << (uint32_t)this->registers.C 
-			<< " D: " << std::hex << (uint32_t)this->registers.D
-			<< " E: " << std::hex << (uint32_t)this->registers.E
-			<< " H: " << std::hex << (uint32_t)this->registers.H
-			<< " L: " << std::hex << (uint32_t)this->registers.L
-			<< " SP: " << std::hex << (uint32_t)this->registers.SP
-			<< " PC: 00:" << std::hex << (uint32_t)this->registers.PC
-			<< " (" << std::hex << (uint32_t)this->gb->mmu->Read(this->registers.PC) << (uint32_t)this->gb->mmu->Read(this->registers.PC + 1) << (uint32_t)this->gb->mmu->Read(this->registers.PC + 2) << (uint32_t)this->gb->mmu->Read(this->registers.PC + 3) << ")";
-		
+		log_string << "A: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.A);
+		log_string << " F: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.F);
+		log_string << " B: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.B);
+		log_string << " C: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.C);
+		log_string << " D: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.D);
+		log_string << " E: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.E);
+		log_string << " H: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.H);
+		log_string << " L: " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.L);
+		log_string << " SP: " << std::setw(4) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.SP);
+		log_string << " PC: 00:" << std::setw(4) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->registers.PC);
+		log_string << " (" << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->gb->mmu->Read(this->registers.PC));
+		log_string << " " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->gb->mmu->Read(this->registers.PC + 1));
+		log_string << " " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->gb->mmu->Read(this->registers.PC + 2));
+		log_string << " " << std::setw(2) << std::setfill('0') << std::uppercase << std::hex << uintptr_t(this->gb->mmu->Read(this->registers.PC + 3)) << ")" << std::endl;
+
 		this->log_lines++;
-		if(this->log_lines == 100)
+		if(this->log_lines == 1258895)
 		{
 			std::ofstream out;
 			out.open("log.txt", std::ofstream::out | std::ofstream::trunc);
@@ -1072,13 +1076,16 @@ void CPU::Step()
 			out << this->log_string.rdbuf();
 
 			out.close();
-			this->log_lines++;
+
+			std::cout << "Created log file!" << std::endl;
 		}
 	}
 	else
 	{
+		this->cycles += 1;
 		return;
 	}
+	*/
 
 	if(opcode == 0xCB)
 	{
