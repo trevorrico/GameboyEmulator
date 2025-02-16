@@ -22,25 +22,7 @@ void GameBoy::Update(float dt)
 {
 	if(this->active_cartridge)
 	{
-		uint64_t cycleCount = 4194304.0f * dt;
-		if(cycleCount < 1)
-		{
-			cycleCount = 1;
-		}
-		else if(cycleCount > 41943) // 0.01 seconds
-		{
-			cycleCount = 41943;
-		}
-
-		//cycleCount = 1;
-
-		uint32_t currentCount = this->cpu->cycles;
-		while(this->cpu->cycles < currentCount + cycleCount)
-		{
-			this->cpu->Step();
-		}
-
-		this->cpu->cycles %= 4194304;
+		this->cpu->Step();
 	}
 }
 

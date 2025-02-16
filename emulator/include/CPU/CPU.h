@@ -78,10 +78,18 @@ public:
 
 	uint32_t log_lines = 0;
 private:
+	bool IME = false;
+	bool halted = false;
+
 	std::stringstream log_string;
 
 	void ProcessOpcode(uint8_t opcode);
 	void ProcessCBOpcode(uint8_t opcode);
+
+	bool ProcessInterrupt(uint8_t interrupts_fired, uint8_t bit, uint8_t address);
+	void HandleInterrupts();
+
+	void PushAddress(uint16_t address);
 
 	void set_zero_flag(bool set); // Z
 	void set_carry_flag(bool set); // C
@@ -162,6 +170,7 @@ private:
 	void opcode_EI();
 	void opcode_DI();
 	void opcode_RETI();
+	void opcode_HALT();
 
 	// CB opcodes
 	void opcode_RLC(uint8_t& r8);

@@ -647,10 +647,7 @@ void CPU::opcode_POP_AF()
 
 void CPU::opcode_PUSH_r16(uint16_t& r16)
 {
-	this->registers.SP--;
-	this->gb->mmu->Write(this->registers.SP, r16 >> 8);
-	this->registers.SP--;
-	this->gb->mmu->Write(this->registers.SP, (uint8_t)(r16 & 0x00FF));
+	this->PushAddress(r16);
 
 	this->registers.PC += 1;
 	this->cycles += 4;
@@ -747,23 +744,33 @@ void CPU::opcode_RST(uint16_t address)
 
 void CPU::opcode_EI()
 {
-	// TODO
+	this->IME = true;
+
 	this->registers.PC += 1;
 	this->cycles += 1;
 }
 
 void CPU::opcode_DI()
 {
-	// TODO
+	this->IME = false;
+
 	this->registers.PC += 1;
 	this->cycles += 1;
 }
 
 void CPU::opcode_RETI()
 {
-	// TODO
 	opcode_EI();
 	opcode_RET();
+
+	this->cycles -=1;
+}
+
+void CPU::opcode_HALT()
+{
+	// WIP
+	this->halted = true;
+	this->registers.PC += 1;
 }
 
 // CB

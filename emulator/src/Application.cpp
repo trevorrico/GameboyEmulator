@@ -51,14 +51,17 @@ void Application::Run()
 
 		if(paused == false)
 		{
-			this->gameboy->Update(dt);
-			
-			for(int i = 0; i < this->breakpoints.size(); i++)
+			for(int i = 0; i < 100; i++)
 			{
-				if(this->gameboy->cpu->registers.PC == this->breakpoints[i])
+				this->gameboy->Update(dt);
+				
+				for(int i = 0; i < this->breakpoints.size(); i++)
 				{
-					paused = true;
-					break;
+					if(this->gameboy->cpu->registers.PC == this->breakpoints[i])
+					{
+						paused = true;
+						break;
+					}
 				}
 			}
 		}
