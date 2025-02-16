@@ -100,8 +100,8 @@ void CPU::opcode_LD_hl_sp_n8()
 	int8_t e8 = static_cast<int8_t>(this->gb->mmu->Read(this->registers.PC + 1));
 	this->registers.HL = this->registers.SP + e8;
 	
-	set_carry_flag((this->registers.SP & 0xFF) + e8 > 0xFF);
-	set_half_carry_flag((this->registers.SP & 0x0F) + e8 > 0x0F);
+	set_carry_flag((this->registers.SP & 0xFF) + (e8 & 0xFF) > 0xFF);
+	set_half_carry_flag((this->registers.SP & 0x0F) + (e8 & 0x0F) > 0x0F);
 
 	set_zero_flag(false);
 	set_subtraction_flag(false);
@@ -230,8 +230,8 @@ void CPU::opcode_DEC_hl()
 void CPU::opcode_ADD_hl(uint16_t& r16)
 {
 	set_carry_flag(this->registers.HL + r16 > 0xFFFF);
-	set_half_carry_flag(this->registers.HL & 0x0FFF + r16 > 0x0FFF);
-	set_zero_flag(false);
+	set_half_carry_flag((this->registers.HL & 0x0FFF) + (r16 & 0x0FFF) > 0x0FFF);
+	set_subtraction_flag(false);
 
 	this->registers.HL += r16;
 
@@ -257,10 +257,12 @@ void CPU::opcode_ADD_SP_e8()
 {
 	int8_t e8 = static_cast<int8_t>(this->gb->mmu->Read(this->registers.PC + 1));
 	
-	set_carry_flag((this->registers.SP & 0xFF) + e8 > 0xFF);
-	set_half_carry_flag((this->registers.SP & 0x0F) + e8 > 0x0F);
+	int32_t result = this->registers.SP + e8;
 
-	this->registers.SP += e8;
+	set_carry_flag((this->registers.SP & 0xFF) + (e8 & 0xFF) > 0xFF);
+	set_half_carry_flag((this->registers.SP & 0x0F) + (e8 & 0x0F) > 0x0F);
+
+	this->registers.SP = static_cast<uint16_t>(result);
 
 	set_zero_flag(false);
 	set_subtraction_flag(false);
