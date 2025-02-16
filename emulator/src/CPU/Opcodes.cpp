@@ -242,7 +242,7 @@ void CPU::opcode_ADD_hl(uint16_t& r16)
 void CPU::opcode_ADD_A_r8(uint8_t& r8)
 {
 	set_carry_flag(this->registers.A + r8 > 0xFF);
-	set_half_carry_flag((this->registers.A & 0x0F) + r8 > 0x0F);
+	set_half_carry_flag((this->registers.A & 0x0F) + (r8 & 0x0F) > 0x0F);
 
 	this->registers.A += r8;
 
@@ -289,9 +289,17 @@ void CPU::opcode_ADD_A_hl()
 void CPU::opcode_ADC_A_r8(uint8_t& r8)
 {
 	uint8_t carry = get_carry_flag();
-	uint8_t val = r8 + carry;
+	
+	set_carry_flag(this->registers.A + r8 + carry > 0xFF);
+	set_half_carry_flag((this->registers.A & 0x0F) + (r8 & 0x0F) + carry > 0x0F);
 
-	opcode_ADD_A_r8(val);
+	this->registers.A += r8 + carry;
+
+	set_zero_flag(this->registers.A == 0);
+	set_subtraction_flag(false);
+
+	this->registers.PC += 1;
+	this->cycles += 1;
 }
 
 void CPU::opcode_ADC_A_n8()
@@ -312,7 +320,7 @@ void CPU::opcode_ADC_A_hl()
 void CPU::opcode_SUB_A_r8(uint8_t& r8)
 {
 	set_carry_flag(this->registers.A < r8);
-	set_half_carry_flag((this->registers.A & 0x0F) < r8 & 0x0F);
+	set_half_carry_flag((this->registers.A & 0x0F) - (r8 & 0x0F) < 0);
 
 	this->registers.A -= r8;
 
@@ -343,7 +351,16 @@ void CPU::opcode_SBC_A_r8(uint8_t& r8)
 	uint8_t carry = get_carry_flag();
 	uint8_t val = r8 + carry;
 
-	opcode_SUB_A_r8(val);
+	set_carry_flag(this->registers.A < r8 + carry);
+	set_half_carry_flag((this->registers.A & 0x0F) - (r8 & 0x0F) - carry < 0);
+
+	this->registers.A -= val;
+
+	set_zero_flag(this->registers.A == 0);
+	set_subtraction_flag(true);
+
+	this->registers.PC += 1;
+	this->cycles += 1;
 }
 
 void CPU::opcode_SBC_A_n8()
