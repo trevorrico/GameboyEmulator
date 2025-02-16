@@ -4,6 +4,7 @@ GameBoy::GameBoy()
 {
 	this->mmu = new MemoryBus(this);
 	this->cpu = new CPU(this);
+	this->timer = new Timer(this);
 	this->active_cartridge = nullptr;
 }
 
@@ -14,6 +15,7 @@ GameBoy::~GameBoy()
 		delete this->active_cartridge;
 	}
 
+	delete this->timer;
 	delete this->cpu;
 	delete this->mmu;
 }
@@ -22,7 +24,9 @@ void GameBoy::Update(float dt)
 {
 	if(this->active_cartridge)
 	{
-		this->cpu->Step();
+		uint32_t new_cycles = this->cpu->Step();
+
+		this->timer->Update(new_cycles);
 	}
 }
 

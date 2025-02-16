@@ -9,6 +9,7 @@
 #include "MemoryBus.h"
 #include "CPU/CPU.h"
 #include "Cartridge.h"
+#include "Timer.h"
 
 class GameBoy
 {
@@ -21,6 +22,7 @@ public:
 	CPU* cpu = nullptr;
 	MemoryBus* mmu = nullptr;
 	Cartridge* active_cartridge = nullptr;
+	Timer* timer = nullptr;
 	
 	bool LoadROM(std::string rom_path);
 private:

@@ -29,6 +29,8 @@ bool CPU::ProcessInterrupt(uint8_t interrupts_fired, uint8_t bit, uint8_t addres
 {
 	if(interrupts_fired & (0x01 << bit))
 	{
+		this->cycles += 5;
+
 		uint8_t IF = this->gb->mmu->Read(0xFF0F);
 		this->gb->mmu->Write(0xFF0F, IF & (0xFE << bit));
 		this->registers.PC = address;
@@ -146,13 +148,17 @@ uint8_t CPU::get_half_carry_flag()
 	return (this->registers.F >> 5) & 0x01;
 }
 
-void CPU::Step()
+uint32_t CPU::Step()
 {
+	uint32_t start_cycles = this->cycles;
+
 	HandleInterrupts();
 
 	if(this->halted)
 	{
-		return;
+		uint32_t diff = this->cycles - start_cycles;
+		this->cycles %= CLOCK_SPEED;
+		return diff;
 	}
 
 	uint8_t opcode = this->gb->mmu->Read(this->registers.PC);
@@ -205,4 +211,8 @@ void CPU::Step()
 	{
 		this->ProcessOpcode(opcode);
 	}
+
+	uint32_t diff = this->cycles - start_cycles;
+	this->cycles %= CLOCK_SPEED;
+	return diff;
 }

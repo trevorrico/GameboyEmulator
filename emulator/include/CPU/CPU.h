@@ -7,6 +7,8 @@
 #include <sstream>
 #include <fstream>
 
+#define CLOCK_SPEED 4194304 // HZ
+
 class GameBoy;
 
 class CPU
@@ -16,7 +18,7 @@ public:
 	~CPU();
 
 	void Reset();
-	void Step();
+	uint32_t Step();
 
 	struct Registers
 	{

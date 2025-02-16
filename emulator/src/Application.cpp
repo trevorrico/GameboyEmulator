@@ -163,7 +163,8 @@ void Application::RenderGUI()
 			gameboy->cpu->get_carry_flag());
 		
 		ImGui::Text("Cycle: %u", gameboy->cpu->cycles);
-		ImGui::Text("Log line: %u", gameboy->cpu->log_lines);
+		ImGui::Text("TIMA: %u", gameboy->mmu->Read(0xFF05));
+		ImGui::Text("DIV: %u", gameboy->mmu->Read(0xFF04));
 
 		if(ImGui::Button("Cycle"))
 		{

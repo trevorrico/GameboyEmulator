@@ -11,6 +11,7 @@ add_executable("Emulator"
 	"src/MemoryBus.cpp"
 	"src/GameBoy.cpp"
 	"src/Cartridge.cpp"
+	"src/Timer.cpp"
 )
 
 set_property(TARGET "Emulator" PROPERTY CXX_STANDARD 17)
