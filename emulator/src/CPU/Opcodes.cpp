@@ -675,7 +675,7 @@ void CPU::opcode_PUSH_r16(uint16_t& r16)
 void CPU::opcode_RET()
 {
 	opcode_POP_r16(this->registers.PC);
-	this->registers.PC -= 1; // I do not know if this should be here 
+	this->registers.PC -= 1;
 	this->cycles += 1;
 }
 
@@ -735,9 +735,9 @@ void CPU::opcode_CALL()
 
 	uint16_t value = (high << 8) | low;
 
-	opcode_PUSH_r16(this->registers.PC);
+	this->PushAddress(this->registers.PC);
 	this->registers.PC = value;
-	this->cycles += 2;
+	this->cycles += 6;
 }
 
 void CPU::opcode_CALL_cond(uint8_t cond)
@@ -755,10 +755,9 @@ void CPU::opcode_CALL_cond(uint8_t cond)
 
 void CPU::opcode_RST(uint16_t address)
 {
-	opcode_PUSH_r16(address);
-	opcode_JP_r16(address);
-
-	this->cycles -= 4;
+	this->PushAddress(this->registers.PC + 1);
+	this->registers.PC = address;
+	this->cycles += 4;
 }
 
 void CPU::opcode_EI()

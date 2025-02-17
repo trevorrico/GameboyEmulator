@@ -180,7 +180,7 @@ uint8_t Cartridge::ReadRAM(uint16_t address)
 
 void Cartridge::WriteRAM(uint16_t address, uint8_t value)
 {
-	assert(address <= 0x7FFF);
+	assert(address >= 0xA000 && address <= 0xBFFF);
 
 	switch(header.cartridge_type)
 	{

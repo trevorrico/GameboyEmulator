@@ -646,8 +646,8 @@ void CPU::ProcessOpcode(uint8_t opcode)
 		this->registers.PC += 1;
 		this->cycles += 1;
 		break;
-	case 0xD4: // CALL NZ, a16
-		opcode_CALL_cond(get_zero_flag() == 0);
+	case 0xD4: // CALL NC, a16
+		opcode_CALL_cond(get_carry_flag() == 0);
 		break;
 	case 0xD5: // PUSH DE
 		opcode_PUSH_r16(this->registers.DE);
