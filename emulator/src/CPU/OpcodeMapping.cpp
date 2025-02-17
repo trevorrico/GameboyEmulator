@@ -976,7 +976,7 @@ void CPU::ProcessCBOpcode(uint8_t opcode)
 		case 0xBC: opcode_RES(7, this->registers.H); break;
 		case 0xBD: opcode_RES(7, this->registers.L); break;
 		case 0xBE: opcode_RES_hl(7); break;
-		case 0xBF: opcode_SET(7, this->registers.A); break;
+		case 0xBF: opcode_RES(7, this->registers.A); break;
 		case 0xC0: opcode_SET(0, this->registers.B); break;
 		case 0xC1: opcode_SET(0, this->registers.C); break;
 		case 0xC2: opcode_SET(0, this->registers.D); break;

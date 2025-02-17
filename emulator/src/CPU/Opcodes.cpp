@@ -998,7 +998,7 @@ void CPU::opcode_BIT(uint8_t u3, uint8_t r8)
 
 	set_zero_flag(bit == 0);
 	set_subtraction_flag(false);
-	set_half_carry_flag(false);
+	set_half_carry_flag(true);
 
 	this->registers.PC += 1;
 	this->cycles += 2;
@@ -1014,7 +1014,7 @@ void CPU::opcode_BIT_hl(uint8_t u3)
 
 void CPU::opcode_RES(uint8_t u3, uint8_t& r8)
 {
-	r8 &= 0xFE << u3;
+	r8 &= ~(0x01 << u3);
 
 	this->registers.PC += 1;
 	this->cycles += 2;
