@@ -844,12 +844,12 @@ void CPU::opcode_RL(uint8_t& r8)
 
 	uint8_t carry = get_carry_flag();
 
-	set_zero_flag(r8 == 0);
+	r8 = (r8 << 1) | carry;
+	
+	set_zero_flag(r8  == 0);
 	set_subtraction_flag(false);
 	set_half_carry_flag(false);
 	set_carry_flag(bit);
-
-	r8 = (r8 << 1) | carry;
 
 	this->cycles += 2;
 	this->registers.PC += 1;
@@ -870,12 +870,12 @@ void CPU::opcode_RR(uint8_t& r8)
 
 	uint8_t carry = get_carry_flag();
 
+	r8 = (r8 >> 1) | (carry << 7);
+	
 	set_zero_flag(r8 == 0);
 	set_subtraction_flag(false);
 	set_half_carry_flag(false);
 	set_carry_flag(bit);
-
-	r8 = (r8 >> 1) | (carry << 7);
 
 	this->cycles += 2;
 	this->registers.PC += 1;
@@ -892,16 +892,14 @@ void CPU::opcode_RR_hl()
 
 void CPU::opcode_SLA(uint8_t& r8)
 {
-	uint8_t bit = (r8 & 0x80) >> 7;
+	uint8_t bit = r8 >> 7;
 
-	uint8_t carry = get_carry_flag();
+	r8 = r8 << 1;
 	
 	set_zero_flag(r8 == 0);
 	set_subtraction_flag(false);
 	set_half_carry_flag(false);
 	set_carry_flag(bit);
-
-	r8 << 1;
 
 	this->cycles += 2;
 	this->registers.PC += 1;
@@ -922,13 +920,13 @@ void CPU::opcode_SRA(uint8_t& r8)
 	uint8_t high_bit = (r8 & 0x80);
 
 	uint8_t carry = get_carry_flag();
+
+	r8 = (r8 >> 1) | high_bit;
 	
 	set_zero_flag(r8 == 0);
 	set_subtraction_flag(false);
 	set_half_carry_flag(false);
 	set_carry_flag(bit);
-
-	r8 = (r8 >> 1) | high_bit;
 
 	this->cycles += 2;
 	this->registers.PC += 1;
@@ -947,13 +945,13 @@ void CPU::opcode_SWAP(uint8_t& r8)
 {
 	uint8_t upper = (r8 & 0xF0) >> 4;
 	uint8_t lower = (r8 & 0x0F) << 4;
+
+	r8 = upper | lower;
 	
 	set_zero_flag(r8 == 0);
 	set_subtraction_flag(false);
 	set_half_carry_flag(false);
 	set_carry_flag(false);
-
-	r8 = upper | lower;
 
 	this->cycles += 2;
 	this->registers.PC += 1;
@@ -973,13 +971,13 @@ void CPU::opcode_SRL(uint8_t& r8)
 	uint8_t bit = (r8 & 0x01);
 
 	uint8_t carry = get_carry_flag();
+
+	r8 = (r8 >> 1);
 	
 	set_zero_flag(r8 == 0);
 	set_subtraction_flag(false);
 	set_half_carry_flag(false);
 	set_carry_flag(bit);
-
-	r8 = (r8 >> 1);
 
 	this->cycles += 2;
 	this->registers.PC += 1;
