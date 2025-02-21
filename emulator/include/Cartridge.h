@@ -82,6 +82,9 @@ private:
 	uint8_t* rom;
 	uint8_t* ram;
 
+	size_t allocated_ram_size;
+	size_t allocated_rom_size;
+
 	bool LoadCartridgeHeader(uint8_t* rom);
 };
 

@@ -19,7 +19,7 @@ void MemoryBus::Reset()
 	memset(memory, 0, 0x10000);
 }
 
-void MemoryBus::Write(uint16_t address, uint8_t data)
+void MemoryBus::Write(uint32_t address, uint8_t data)
 {
 	if(address == 0xFF02 && data == 0x81)
 	{
@@ -47,7 +47,7 @@ void MemoryBus::Write(uint16_t address, uint8_t data)
 	memory[address] = data;
 }
 
-uint8_t MemoryBus::Read(uint16_t address)
+uint8_t MemoryBus::Read(uint32_t address)
 {
 	if(gb->active_cartridge != nullptr)
 	{

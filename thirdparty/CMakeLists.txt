@@ -32,5 +32,5 @@ target_include_directories(${PROJECT_NAME}
 
 # Fix imm 
 if(NOT (CMAKE_GENERATOR MATCHES "Visual Studio"))
-	target_link_libraries(${PROJECT_NAME} winmm.lib)
+	target_link_libraries(${PROJECT_NAME} imm32.lib)
 endif()
