@@ -19,7 +19,7 @@ void MemoryBus::Reset()
 	memset(memory, 0, 0x10000);
 }
 
-void MemoryBus::Write(uint16_t address, uint8_t data)
+void MemoryBus::Write(uint32_t address, uint8_t data)
 {
 	if(address == 0xFF02 && data == 0x81)
 	{
@@ -38,6 +38,11 @@ void MemoryBus::Write(uint16_t address, uint8_t data)
 			gb->active_cartridge->WriteRAM(address, data);
 			return;
 		}
+		else if(address >= 0x8000 && address <= 0x9FFF)
+		{
+			gb->ppu->WriteVRAM(address, data);
+			return;
+		}
 	}
 	else
 	{
@@ -47,7 +52,7 @@ void MemoryBus::Write(uint16_t address, uint8_t data)
 	memory[address] = data;
 }
 
-uint8_t MemoryBus::Read(uint16_t address)
+uint8_t MemoryBus::Read(uint32_t address)
 {
 	if(gb->active_cartridge != nullptr)
 	{
@@ -58,6 +63,10 @@ uint8_t MemoryBus::Read(uint16_t address)
 		else if(address >= 0xA000 && address <= 0xBFFF)
 		{
 			return gb->active_cartridge->ReadRAM(address);
+		}
+		else if(address >= 0x8000 && address <= 0x9FFF)
+		{
+			return gb->ppu->ReadVRAM(address);
 		}
 	}
 	else

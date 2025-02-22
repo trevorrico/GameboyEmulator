@@ -4,6 +4,7 @@ GameBoy::GameBoy()
 {
 	this->mmu = new MemoryBus(this);
 	this->cpu = new CPU(this);
+	this->ppu = new PPU(this);
 	this->timer = new Timer(this);
 	this->active_cartridge = nullptr;
 }
@@ -16,6 +17,7 @@ GameBoy::~GameBoy()
 	}
 
 	delete this->timer;
+	delete this->ppu;
 	delete this->cpu;
 	delete this->mmu;
 }

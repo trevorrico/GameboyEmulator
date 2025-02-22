@@ -10,6 +10,7 @@
 #include "CPU/CPU.h"
 #include "Cartridge.h"
 #include "Timer.h"
+#include "PPU.h"
 
 class GameBoy
 {
@@ -20,6 +21,7 @@ public:
 	void Update(float dt);
 
 	CPU* cpu = nullptr;
+	PPU* ppu = nullptr;
 	MemoryBus* mmu = nullptr;
 	Cartridge* active_cartridge = nullptr;
 	Timer* timer = nullptr;

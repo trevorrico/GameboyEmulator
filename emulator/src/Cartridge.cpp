@@ -48,6 +48,9 @@ bool Cartridge::LoadROM(std::string path, uint8_t* rom, size_t data_size)
 
 		// Reset ram to 0
 		memset(this->ram, 0, ram_bank_count * 0x2000);
+		
+		this->allocated_rom_size = rom_bank_count * 0x4000;
+		this->allocated_ram_size = ram_bank_count * 0x2000;
 	}
 
 	return result;
@@ -165,14 +168,19 @@ void Cartridge::WriteROM(uint16_t address, uint8_t value)
 uint8_t Cartridge::ReadRAM(uint16_t address)
 {
 	assert(address >= 0xA000 && address <= 0xBFFF);
+	
+	if(allocated_ram_size == 0)
+	{
+		return 0x00;
+	}
 
 	switch(header.cartridge_type)
 	{
 	case ROM_ONLY:
-		return this->ram[address];
+		return this->ram[address - 0xA000];
 	default:
 		// Still didn't implement other types	
-		return this->ram[address];
+		return this->ram[address - 0xA000];
 	}
 	
 	return 0;
@@ -182,13 +190,19 @@ void Cartridge::WriteRAM(uint16_t address, uint8_t value)
 {
 	assert(address >= 0xA000 && address <= 0xBFFF);
 
+	if(allocated_ram_size == 0)
+	{
+		return;
+	}
+
+	if(this->ram)
 	switch(header.cartridge_type)
 	{
 	case ROM_ONLY:
-		// fun fact: rom isn't writeable
+		this->ram[address - 0xA000] = value;
 		break;
 	default:
 		// Still didn't implement other types	
-		this->ram[address] = value;
+		this->ram[address - 0xA000] = value;
 	}
 }
