@@ -14,6 +14,13 @@
 
 #include <iostream>
 
+float quadVertices[] = {
+	-1.0, 1.0, 0.5, 0.0, 1.0,
+	-1.0,-3.0, 0.5, 0.0,-1.0,
+	 3.0, 1.0, 0.5, 2.0, 1.0
+};
+
+
 class Application
 {
 public:
@@ -33,11 +40,16 @@ private:
 
 	GLFWwindow* window;
 
+	GLuint viewport_vao;
+	GLuint viewport_vbo;
+	GLuint viewport_buffer;
+
 	// Gameboy variables
 	GameBoy* gameboy;
 
 	// UI variables
 	bool show_cpu_debug = true;
+	bool show_vram_view = false;
 	bool show_breakpoints = false;
 	uint32_t current_breakpoint_item = 0;
 	std::string hex_val = "0000";

@@ -22,6 +22,11 @@ bool Cartridge::LoadROM(std::string path, uint8_t* rom, size_t data_size)
 	bool result = LoadCartridgeHeader(rom);
 	if(result)
 	{
+		if (data_size % 16384 != 0) {
+			std::cout << "ROM size must be a multiple of 16 KB" << std::endl;
+			return false;
+		}
+
 		// Get rom and ram size
 		uint64_t rom_size = 0x8000 * (1 << this->header.rom_size);
 

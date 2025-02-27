@@ -29,6 +29,7 @@ void GameBoy::Update(float dt)
 		uint32_t new_cycles = this->cpu->Step();
 
 		this->timer->Update(new_cycles);
+		this->ppu->Tick(new_cycles);
 	}
 }
 

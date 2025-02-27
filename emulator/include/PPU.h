@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <iostream>
+#include <bitset>
+
+#include "BitwiseUtils.h"
 
 class GameBoy;
 
@@ -19,6 +22,23 @@ struct Sprite
     uint8_t x_pos;
     uint8_t tile;
     uint8_t flags;
+};
+
+struct Fetcher
+{
+    uint16_t fetcher_x_position = 0;
+    FIFOPixel pixels[8];
+    uint8_t pixel_count = 0;
+    uint8_t tile_id = 0;
+    uint16_t tile_low_data = 0;
+    uint16_t tile_high_data = 0;
+};
+
+enum FetcherType
+{
+    BACKGROUND,
+    WINDOW,
+    SPRITE
 };
 
 // gameboy res: 160x144
@@ -40,6 +60,8 @@ public:
     void WriteOAM(uint16_t address, uint8_t data);
 
     void SwitchMode(uint8_t mode);
+
+    uint32_t screen_pixels[160][144] = { 0 };
 private:
     uint16_t GetTile(uint8_t id, bool obj); // returns tile address
 
@@ -51,9 +73,15 @@ private:
     uint16_t internal_clock = 0;
     uint16_t current_line_x = 0;
 
-    FIFOPixel background_pixels[256][256];
-    FIFOPixel sprite_pixels[160][144];
-    uint8_t screen_pixels[160][144];
+    uint16_t window_line_counter = 0;
+    uint16_t scanline_time = 0;
+
+    uint8_t fetcher_stage = 0;
+    FetcherType fetcher_type;
+    Fetcher background_fetcher;
+    bool first_background_fetch = true;
+    Fetcher sprite_fetcher;
+
 
     uint8_t vram[0x2000]; // 0x8000-0x9FFF
     uint8_t oam[0xA0]; // 0xFE00-0xFE9F

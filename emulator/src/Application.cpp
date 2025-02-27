@@ -51,7 +51,7 @@ void Application::Run()
 
 		if(paused == false)
 		{
-			for(int i = 0; i < 100; i++)
+			for(int i = 0; i < 500; i++)
 			{
 				this->gameboy->Update(dt);
 				
@@ -139,11 +139,29 @@ void Application::RenderGUI()
 		{
 			ImGui::MenuItem("Toggle CPU debug", nullptr, &show_cpu_debug);
 			ImGui::MenuItem("Toggle Breakpoints", nullptr, &show_breakpoints);
+			ImGui::MenuItem("Toggle VRAM view", nullptr, &show_vram_view);
 			ImGui::EndMenu();
 		}
 
 		ImGui::EndMainMenuBar();
-	}	
+	}
+
+	if (show_vram_view)
+	{
+		ImGui::Begin("VRAM");
+
+		for (uint16_t i = 0x8000; i <= 0x9FFF; i++)
+		{
+			ImGui::Text("0x%02X ", this->gameboy->mmu->Read(i));
+
+			if (i == 0 || i % 16 != 0)
+			{
+				ImGui::SameLine();
+			}
+		}
+
+		ImGui::End();
+	}
 
 	if(show_cpu_debug)
 	{
@@ -161,6 +179,20 @@ void Application::RenderGUI()
 			gameboy->cpu->get_subtraction_flag(), 
 			gameboy->cpu->get_half_carry_flag(), 
 			gameboy->cpu->get_carry_flag());
+
+		uint8_t IE = this->gameboy->mmu->Read(0xFFFF);
+		uint8_t IF = this->gameboy->mmu->Read(0xFF0F);
+
+		ImGui::Text("IE: 0x%02X", IE);
+		ImGui::Text("IF: 0x%02X", IF);
+		if (this->gameboy->cpu->halted)
+		{
+			ImGui::Text("HALTED: true");
+		}
+		else
+		{
+			ImGui::Text("HALTED: false");
+		}
 		
 		ImGui::Text("Cycle: %u", gameboy->cpu->cycles);
 		ImGui::Text("TIMA: %u", gameboy->mmu->Read(0xFF05));
@@ -264,6 +296,37 @@ void Application::RenderGUI()
 
 		ImGui::End();
 	}
+
+	ImGui::Begin("Viewport");
+	ImGui::SetWindowFontScale(0.5);
+
+	for (int y = 0; y < 144; y++)
+	{
+		if (this->viewport[y].size() < 480)
+		{
+			this->viewport[y].resize(480);
+		}
+
+		for (int x = 0; x < 160; x++)
+		{
+			char character = ' ';
+			switch (gameboy->ppu->screen_pixels[x][y])
+			{
+				case 0: character = ' '; break;
+				case 1: character = '*'; break;
+				case 2: character = '#'; break;
+				case 3: character = '@'; break;
+			}
+
+			this->viewport[y][x * 3] = character;
+			this->viewport[y][x * 3 + 1] = ' ' ;
+			this->viewport[y][x * 3 + 2] = ' ';
+		}
+
+		ImGui::Text(this->viewport[y].c_str());
+	}
+
+	ImGui::End();
 
 	// Render GUI
 	ImGui::Render();

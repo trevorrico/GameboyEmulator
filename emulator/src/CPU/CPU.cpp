@@ -49,6 +49,7 @@ void CPU::HandleInterrupts()
 	uint8_t interrupts_fired = IF & IE;
 	if(interrupts_fired == 0x00)
 	{
+		halted = false;
 		return;
 	}
 
@@ -146,6 +147,19 @@ uint8_t CPU::get_subtraction_flag()
 uint8_t CPU::get_half_carry_flag()
 {
 	return (this->registers.F >> 5) & 0x01;
+}
+
+void CPU::SetInterruptFlag(uint8_t bit, bool value)
+{
+	uint8_t IF = this->gb->mmu->Read(0xFF0F);
+	if (value)
+	{
+		IF |= (0x01 << bit);
+	}
+	else
+	{
+		IF &= ~(0x01 << bit);
+	}
 }
 
 uint32_t CPU::Step()

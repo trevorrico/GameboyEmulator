@@ -78,10 +78,14 @@ public:
 	uint8_t get_subtraction_flag();
 	uint8_t get_half_carry_flag();
 
-	uint32_t log_lines = 0;
-private:
+	void SetInterruptFlag(uint8_t bit, bool value);
+
 	bool IME = false;
 	bool halted = false;
+
+	uint32_t log_lines = 0;
+private:
+	
 
 	std::stringstream log_string;
 
