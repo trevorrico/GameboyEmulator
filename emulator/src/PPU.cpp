@@ -168,7 +168,7 @@ void PPU::Tick(uint8_t cycles)
                 {
                     //uint8_t id = this->background_fetcher.pixel_count - i - 1;
                     uint8_t resulting_color = this->background_fetcher.pixels[i].color;
-                    uint8_t x = this->current_line_x + i;
+                    uint8_t x = this->current_line_x;
 
                     this->current_line_x++;
                     if(x < scx % 8)
@@ -192,25 +192,6 @@ void PPU::Tick(uint8_t cycles)
                 
                 if(this->current_line_x >= 160)
                 {
-                    /*
-                    for (int i = 0; i < 160; i++)
-                    {
-                        switch (this->screen_pixels[i][ly])
-                        {
-                        case 0:
-                            std::cout << " "; break;
-                        case 1:
-                            std::cout << "."; break;
-                        case 2:
-                            std::cout << "@"; break;
-                        case 3:
-                            std::cout << "#"; break;
-                        }
-                    }
-
-                    std::cout << std::endl;
-                    */
-
                     this->background_fetcher.fetcher_x_position = 0;
                     this->SwitchMode(0);
                 }
@@ -368,6 +349,7 @@ void PPU::SwitchMode(uint8_t m)
         if(this->scanline_time < 456)
         {
             this->pause_time = 456 - this->scanline_time;
+            this->scanline_time = 0;
         }
     }
     else if(m == 1) // V-Blank
