@@ -83,8 +83,6 @@ void PPU::Tick(uint8_t cycles)
 
                 map_location += (offset & 0x3FFF);
                 this->background_fetcher.tile_id = ReadVRAM(map_location);
-                //std::cout << std::hex << (uint32_t)(map_location) << std::endl;
-                //std::cout << (uint32_t)this->background_fetcher.tile_id << std::endl;
 
                 this->internal_clock -= 2;
                 this->scanline_time += 2;
@@ -175,13 +173,13 @@ void PPU::Tick(uint8_t cycles)
                     this->current_line_x++;
                     if(x < scx % 8)
                     {
-                        this->screen_pixels[x][ly] = 0;
+                        this->screen_pixels[x + ly * 160] = 0;
                         continue;
                     }
 
                     if (x < 160)
                     {
-                        this->screen_pixels[x][ly] = resulting_color;
+                        this->screen_pixels[x + ly * 160] = resulting_color;
                     }
                     else
                     {

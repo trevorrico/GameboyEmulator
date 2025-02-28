@@ -1,5 +1,10 @@
 #include "Application.h"
 
+void on_window_resized(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
 Application::Application()
 {
 
@@ -7,6 +12,7 @@ Application::Application()
 
 Application::~Application()
 {
+	delete this->renderer;
 	delete this->gameboy;
 
 	ImGui_ImplOpenGL3_Shutdown();
@@ -34,9 +40,15 @@ int Application::Initialize()
 		return -1;
 	}
 
+	glfwSetWindowUserPointer(this->window, this);
+
+	glfwSetFramebufferSizeCallback(this->window, &on_window_resized);
+
 	this->ConfigureImGui();
 
 	this->gameboy = new GameBoy();
+
+	this->renderer = new Renderer();
 	return 0;
 }
 
@@ -68,6 +80,8 @@ void Application::Run()
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		this->renderer->Render(this->gameboy);
 
 		this->RenderGUI();
 
@@ -296,37 +310,6 @@ void Application::RenderGUI()
 
 		ImGui::End();
 	}
-
-	ImGui::Begin("Viewport");
-	ImGui::SetWindowFontScale(0.5);
-
-	for (int y = 0; y < 144; y++)
-	{
-		if (this->viewport[y].size() < 480)
-		{
-			this->viewport[y].resize(480);
-		}
-
-		for (int x = 0; x < 160; x++)
-		{
-			char character = ' ';
-			switch (gameboy->ppu->screen_pixels[x][y])
-			{
-				case 0: character = ' '; break;
-				case 1: character = '*'; break;
-				case 2: character = '#'; break;
-				case 3: character = '@'; break;
-			}
-
-			this->viewport[y][x * 3] = character;
-			this->viewport[y][x * 3 + 1] = ' ' ;
-			this->viewport[y][x * 3 + 2] = ' ';
-		}
-
-		ImGui::Text(this->viewport[y].c_str());
-	}
-
-	ImGui::End();
 
 	// Render GUI
 	ImGui::Render();

@@ -61,7 +61,7 @@ public:
 
     void SwitchMode(uint8_t mode);
 
-    uint32_t screen_pixels[160][144] = { 0 };
+    uint32_t screen_pixels[160 * 144] = { 0 };
 private:
     uint16_t GetTile(uint8_t id, bool obj); // returns tile address
 

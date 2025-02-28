@@ -11,15 +11,9 @@
 #include <portable-file-dialogs.h>
 
 #include "GameBoy.h"
+#include "Renderer.h"
 
 #include <iostream>
-
-float quadVertices[] = {
-	-1.0, 1.0, 0.5, 0.0, 1.0,
-	-1.0,-3.0, 0.5, 0.0,-1.0,
-	 3.0, 1.0, 0.5, 2.0, 1.0
-};
-
 
 class Application
 {
@@ -40,9 +34,7 @@ private:
 
 	GLFWwindow* window;
 
-	GLuint viewport_vao;
-	GLuint viewport_vbo;
-	GLuint viewport_buffer;
+	Renderer* renderer;
 
 	// Gameboy variables
 	GameBoy* gameboy;

@@ -13,6 +13,7 @@ add_executable("Emulator"
 	"src/Cartridge.cpp"
 	"src/Timer.cpp"
 	"src/PPU.cpp"
+	"src/Renderer.cpp"
 )
 
 set_property(TARGET "Emulator" PROPERTY CXX_STANDARD 17)
