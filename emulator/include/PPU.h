@@ -9,11 +9,17 @@
 
 class GameBoy;
 
+enum FetcherType
+{
+    BACKGROUND,
+    WINDOW,
+    SPRITE
+};
+
 struct FIFOPixel
 {
     uint8_t color; // 0 to 3
-    uint8_t palette;
-    uint8_t background_priority;
+    FetcherType type;
 };
 
 struct Sprite
@@ -27,18 +33,9 @@ struct Sprite
 struct Fetcher
 {
     uint16_t fetcher_x_position = 0;
-    FIFOPixel pixels[8];
-    uint8_t pixel_count = 0;
-    uint8_t tile_id = 0;
     uint16_t tile_low_data = 0;
     uint16_t tile_high_data = 0;
-};
-
-enum FetcherType
-{
-    BACKGROUND,
-    WINDOW,
-    SPRITE
+    uint8_t tile_id = 0;
 };
 
 // gameboy res: 160x144
@@ -65,13 +62,17 @@ public:
 private:
     uint16_t GetTile(uint8_t id, bool obj); // returns tile address
 
+    void PushToLCD(uint8_t cycles);
+
     GameBoy* gb;
 
     uint8_t mode = 2;
 
     uint16_t pause_time = 0;
     uint16_t internal_clock = 0;
+    uint16_t fifo_clock = 0;
     uint16_t current_line_x = 0;
+    uint16_t line_processed_pixel_count = 0;
 
     uint16_t window_line_counter = 0;
     uint16_t scanline_time = 0;
@@ -84,10 +85,13 @@ private:
 
 
     uint8_t vram[0x2000]; // 0x8000-0x9FFF
-    uint8_t oam[0xA0]; // 0xFE00-0xFE9F
+    uint8_t oam[0xA0] = { 0 }; // 0xFE00-0xFE9F
 
     Sprite object_buffer[40];
     uint8_t object_count = 0;
+
+    FIFOPixel fifo[16] = { 0 };
+    uint8_t fifo_pixel_count = 0;
 };
 
 #endif

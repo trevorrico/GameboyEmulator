@@ -22,8 +22,6 @@ void PPU::Tick(uint8_t cycles)
         return; // disabled
     }
 
-    //std::cout << this->mode << std::endl;
-
     this->internal_clock += cycles * 4;
 
     if(this->internal_clock > 0)
@@ -54,14 +52,37 @@ void PPU::Tick(uint8_t cycles)
         uint8_t scy = this->gb->mmu->Read(0xFF42);
         uint8_t scx = this->gb->mmu->Read(0xFF43);
 
-        if(this->fetcher_type == BACKGROUND || this->fetcher_type == WINDOW)
+        if(this->fetcher_stage == 0 && this->internal_clock >= 2) // takes 2 T-Cycles to process
         {
-            if(this->fetcher_stage == 0 && this->internal_clock >= 2) // takes 2 T-Cycles to process
+            uint16_t map_location = 0;
+            if (this->fetcher_type == SPRITE)
             {
-                uint16_t map_location = 0;
+                for (int i = 0; i < this->object_count; i++)
+                {
+                    if (this->object_buffer[i].x_pos <= this->current_line_x + 8)
+                    {
+                        this->fetcher_stage = 0;
+                        this->fetcher_type = SPRITE;
+                        
+                        this->sprite_fetcher.tile_id = this->object_buffer[i].tile;
+                        
+                        // remove this object from obj buffer
+                        for (int j = i + 1; j < this->object_count; j++)
+                        {
+                            this->object_buffer[j - 1] = this->object_buffer[j];
+                        }
+
+                        this->object_count--;
+
+                        break;
+                    }
+                }
+            }
+            else
+            {
                 uint16_t offset = (this->background_fetcher.fetcher_x_position);
                 uint8_t bit = 0;
-                if(this->fetcher_type == BACKGROUND)
+                if (this->fetcher_type == BACKGROUND)
                 {
                     bit = GET_BIT(lcd_control, 3);
 
@@ -73,8 +94,8 @@ void PPU::Tick(uint8_t cycles)
                     bit = GET_BIT(lcd_control, 6);
                     offset += 32 * (this->window_line_counter / 8);
                 }
-                
-                if(bit)
+
+                if (bit)
                 {
                     map_location = 0x9C00; // 0x9C00 - 0x9FFF
                 }
@@ -85,115 +106,109 @@ void PPU::Tick(uint8_t cycles)
 
                 map_location += (offset & 0x3FFF);
                 this->background_fetcher.tile_id = ReadVRAM(map_location);
-
-                this->internal_clock -= 2;
-                this->scanline_time += 2;
-                this->fetcher_stage = 1;
             }
 
-            if(this->fetcher_stage == 1 && this->internal_clock >= 2)
+            this->internal_clock -= 2;
+            this->scanline_time += 2;
+            this->fetcher_stage = 1;
+        }
+
+        if(this->fetcher_stage == 1 && this->internal_clock >= 2)
+        {
+            if (this->fetcher_type == SPRITE)
+            {
+                this->sprite_fetcher.tile_low_data = this->GetTile(this->sprite_fetcher.tile_id, true);
+            }
+            else
             {
                 uint8_t offset = 0;
-                if(this->fetcher_type == BACKGROUND)
+                if (this->fetcher_type == BACKGROUND)
                 {
                     offset = 2 * ((ly + scy) % 8);
-                }           
+                }
                 else
                 {
                     offset = 2 * (this->window_line_counter % 8);
                 }
 
                 this->background_fetcher.tile_low_data = this->GetTile(this->background_fetcher.tile_id, false) + offset;
+            }
                 
-                this->internal_clock -= 2;
-                this->scanline_time += 2;
-                this->fetcher_stage = 2;
-            }
+            this->internal_clock -= 2;
+            this->scanline_time += 2;
+            this->fetcher_stage = 2;
+        }
 
-            if(this->fetcher_stage == 2 && this->internal_clock >= 2)
+        if(this->fetcher_stage == 2 && this->internal_clock >= 2)
+        {
+            this->internal_clock -= 2;
+            this->scanline_time += 2;
+
+            if (this->fetcher_type == SPRITE)
             {
-                this->internal_clock -= 2;
-                this->scanline_time += 2;
-
+                this->sprite_fetcher.tile_high_data = this->sprite_fetcher.tile_low_data + 1;
+            }
+            else
+            {
                 this->background_fetcher.tile_high_data = this->background_fetcher.tile_low_data + 1;
-
-                if(this->first_background_fetch)
-                {
-                    this->first_background_fetch = false;
-                    this->fetcher_stage = 0;
-                    return;
-                }
-
-                this->fetcher_stage = 3;
             }
 
-            if(this->fetcher_stage == 3)
+            this->fetcher_stage = 3;
+        }
+
+        if(this->fetcher_stage == 3)
+        {
+            // attempts to push fifo
+            if (this->internal_clock >= 2)
             {
-                // attempts to push fifo
-                if(this->background_fetcher.pixel_count == 0)
+                if (this->fetcher_type == SPRITE)
                 {
-                    if(this->internal_clock >= 2)
+                    this->internal_clock -= 2;
+                    this->scanline_time += 2;
+
+                    uint8_t b0 = this->gb->mmu->Read(this->sprite_fetcher.tile_high_data);
+                    uint8_t b1 = this->gb->mmu->Read(this->sprite_fetcher.tile_low_data);
+                    for (uint8_t i = 0; i < 8; i++)
                     {
+                        uint8_t color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
+
+                        // mix fifo
+                        if (color > 0)
+                        {
+                            this->fifo[i].color = color;
+                            this->fifo[i].type = SPRITE;
+                        }
+                    }
+
+                    this->fetcher_type = BACKGROUND;
+                }
+                else
+                {
+                    if (this->fifo_pixel_count <= 8)
+                    {
+
                         this->internal_clock -= 2;
                         this->scanline_time += 2;
+
                         this->background_fetcher.fetcher_x_position++;
-                        
-                        this->background_fetcher.pixel_count = 8;
+
                         uint8_t b0 = this->gb->mmu->Read(this->background_fetcher.tile_high_data);
                         uint8_t b1 = this->gb->mmu->Read(this->background_fetcher.tile_low_data);
-                        for(uint8_t i = 0; i < 8; i++)
+                        for (uint8_t i = 0; i < 8; i++)
                         {
-                            this->background_fetcher.pixels[i].color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
-                            this->background_fetcher.pixels[i].palette = 0;
-                            this->background_fetcher.pixels[i].background_priority = 0;
+                            this->fifo[this->fifo_pixel_count + i].color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
+                            this->fifo[this->fifo_pixel_count + i].type = BACKGROUND;
                         }
+
+                        this->fifo_pixel_count += 8;
 
                         this->fetcher_stage = 0;
                     }
                 }
             }
-
-            // attempt to send pixels to screen
-            if(this->internal_clock >= this->background_fetcher.pixel_count)
-            {
-                uint8_t c = this->background_fetcher.pixel_count;
-                
-                this->internal_clock -= c;
-                this->scanline_time += c;
-
-                uint8_t i = 0;
-                for(; i < c; i++)
-                {
-                    //uint8_t id = this->background_fetcher.pixel_count - i - 1;
-                    uint8_t resulting_color = this->background_fetcher.pixels[i].color;
-                    uint8_t x = this->current_line_x;
-
-                    this->current_line_x++;
-                    if (x < scx % 8)
-                    {
-                        //this->screen_pixels[x + ly * 160] = 0;
-                        continue;
-                    }
-
-                    if (x < 160 + (scx % 8))
-                    {
-                        this->screen_pixels[x % 160 + ly * 160] = resulting_color;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                this->background_fetcher.pixel_count -= c;
-                
-                if(this->current_line_x >= (160 + scx % 8) && this->background_fetcher.pixel_count == 0)
-                {
-                    this->background_fetcher.fetcher_x_position = 0;
-                    this->SwitchMode(0);
-                }
-            }
         }
+
+        PushToLCD(cycles);
     }
     else if(this->mode == 0)
     {
@@ -232,6 +247,68 @@ void PPU::Tick(uint8_t cycles)
             {
                 // go to next vblank scanline
                 this->gb->mmu->Write(0xFF44, ly + 1);
+            }
+        }
+    }
+}
+
+void PPU::PushToLCD(uint8_t cycles)
+{
+    //std::cout << (uint32_t)this->fifo_pixel_count << std::endl;
+    if (this->fifo_pixel_count > 8 && this->fetcher_type != SPRITE)
+    {
+        uint8_t ly = this->gb->mmu->Read(0xFF44);
+        uint8_t scx = this->gb->mmu->Read(0xFF43);
+
+        this->fifo_clock += cycles * 4;
+
+        while (this->fifo_clock > 0)
+        {
+            if (this->fifo_pixel_count <= 8 || this->fetcher_type == SPRITE)
+            {
+                break;
+            }
+
+            // check objects in current X
+            for (int i = 0; i < this->object_count; i++)
+            {
+                if (this->object_buffer[i].x_pos <= this->current_line_x + 8)
+                {
+                    this->fetcher_stage = 0;
+                    this->fetcher_type = SPRITE;
+                    return;
+                }
+            }
+
+            this->fifo_clock--;
+
+            // pop current pixel
+            FIFOPixel pixel = this->fifo[0];
+
+            for (int i = 1; i < this->fifo_pixel_count; i++)
+            {
+                this->fifo[i - 1] = this->fifo[i];
+            }
+
+            this->fifo_pixel_count--;
+
+            // ignore if pixel is in the scroll
+            if (this->line_processed_pixel_count < scx % 8)
+            {
+                this->line_processed_pixel_count++;
+                continue;
+            }
+
+            this->line_processed_pixel_count++;
+
+            // set screen pixel
+            this->screen_pixels[this->current_line_x + ly * 160] = pixel.color;
+            this->current_line_x++;
+
+            if (this->current_line_x == 160)
+            {
+                this->SwitchMode(0);
+                break;
             }
         }
     }
@@ -316,31 +393,44 @@ void PPU::SwitchMode(uint8_t m)
         this->object_count = 0;
         for(int i = 0; i < 40; i++)
         {
-            if(this->object_count > 10)
-            {
-                break;
-            }
-
             uint16_t address = 0xFE00 + 0x04 * i;
             
-            Sprite& sp = this->object_buffer[this->object_count];
+            Sprite sp;
 
             sp.y_pos = this->ReadOAM(address);
             sp.x_pos = this->ReadOAM(address + 1);
             sp.tile = this->ReadOAM(address + 2);
             sp.flags = this->ReadOAM(address + 3);
 
-            if(sp.x_pos == 0 || ly + 16 < sp.y_pos || ly + 16 >= sp.y_pos + sprite_height)
-            {
-                continue;
-            }
+            //if(i == 0)
+            //    std::cout << (uint32_t)sp.x_pos << " " << (uint32_t)sp.y_pos << " " << (uint32_t)sp.tile << " " << (uint32_t)sp.flags << std::endl;
 
-            this->object_count++;
+            if (sp.x_pos > 0)
+            {
+                if (ly + 16 >= sp.y_pos)
+                {
+                    if (ly + 16 < sp.y_pos + sprite_height)
+                    {
+                        this->object_buffer[this->object_count] = sp;
+                        this->object_count++;
+
+                        if (this->object_count >= 10)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
         }  
     }
     else if(m == 3) // Drawing
     {
         this->fetcher_stage = 0;
+        this->line_processed_pixel_count = 0;
+        this->current_line_x = 0;
+        this->background_fetcher.fetcher_x_position = 0;
+
+        this->fifo_pixel_count = 0;
     }
     else if(m == 0) // H-Blank
     {

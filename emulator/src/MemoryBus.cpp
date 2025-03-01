@@ -43,6 +43,11 @@ void MemoryBus::Write(uint32_t address, uint8_t data)
 			gb->ppu->WriteVRAM(address, data);
 			return;
 		}
+		else if (address >= 0xFE00 && address <= 0xFE9F)
+		{
+			gb->ppu->WriteOAM(address, data);
+			return;
+		}
 	}
 	else
 	{
@@ -67,6 +72,10 @@ uint8_t MemoryBus::Read(uint32_t address)
 		else if(address >= 0x8000 && address <= 0x9FFF)
 		{
 			return gb->ppu->ReadVRAM(address);
+		}
+		else if (address >= 0xFE00 && address <= 0xFE9F)
+		{
+			return gb->ppu->ReadOAM(address);
 		}
 	}
 	else
