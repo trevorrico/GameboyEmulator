@@ -59,7 +59,7 @@ void PPU::Tick(uint8_t cycles)
             if(this->fetcher_stage == 0 && this->internal_clock >= 2) // takes 2 T-Cycles to process
             {
                 uint16_t map_location = 0;
-                uint16_t offset = (this->background_fetcher.fetcher_x_position + ((scx / 8) & 0x1f));
+                uint16_t offset = (this->background_fetcher.fetcher_x_position + (scx / 8)) & 0x1f;
                 uint8_t bit = 0;
                 if(this->fetcher_type == BACKGROUND)
                 {
@@ -141,7 +141,7 @@ void PPU::Tick(uint8_t cycles)
                         uint8_t b1 = this->gb->mmu->Read(this->background_fetcher.tile_low_data);
                         for(uint8_t i = 0; i < 8; i++)
                         {
-                            this->background_fetcher.pixels[i].color = (GET_BIT(b0, 8 - i) << 1) | GET_BIT(b1, 8 - i);
+                            this->background_fetcher.pixels[i].color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
                             this->background_fetcher.pixels[i].palette = 0;
                             this->background_fetcher.pixels[i].background_priority = 0;
                         }
@@ -188,9 +188,9 @@ void PPU::Tick(uint8_t cycles)
                 }
 
 
-                this->background_fetcher.pixel_count -= i;
+                this->background_fetcher.pixel_count -= c;
                 
-                if(this->current_line_x >= 160)
+                if(this->current_line_x >= 160 && this->background_fetcher.pixel_count == 0)
                 {
                     this->background_fetcher.fetcher_x_position = 0;
                     this->SwitchMode(0);
@@ -343,6 +343,7 @@ void PPU::SwitchMode(uint8_t m)
     }
     else if(m == 3) // Drawing
     {
+        this->fetcher_stage = 0;
     }
     else if(m == 0) // H-Blank
     {
