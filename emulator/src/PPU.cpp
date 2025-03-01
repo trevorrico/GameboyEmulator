@@ -17,7 +17,7 @@ PPU::~PPU()
 void PPU::Tick(uint8_t cycles)
 {
     uint8_t lcd_control = this->gb->mmu->Read(0xFF40);
-    if(lcd_control & 0x80 == 0)
+    if((lcd_control & 0x80) == 0)
     {
         return; // disabled
     }
@@ -59,11 +59,13 @@ void PPU::Tick(uint8_t cycles)
             if(this->fetcher_stage == 0 && this->internal_clock >= 2) // takes 2 T-Cycles to process
             {
                 uint16_t map_location = 0;
-                uint16_t offset = (this->background_fetcher.fetcher_x_position + (scx / 8)) & 0x1f;
+                uint16_t offset = (this->background_fetcher.fetcher_x_position);
                 uint8_t bit = 0;
                 if(this->fetcher_type == BACKGROUND)
                 {
                     bit = GET_BIT(lcd_control, 3);
+
+                    offset = (offset + (scx / 8)) & 0x1F;
                     offset += 32 * (((ly + scy) & 0xFF) / 8);
                 }
                 else
@@ -155,10 +157,6 @@ void PPU::Tick(uint8_t cycles)
             if(this->internal_clock >= this->background_fetcher.pixel_count)
             {
                 uint8_t c = this->background_fetcher.pixel_count;
-                if(this->internal_clock < c)
-                {
-                    c = this->internal_clock;
-                }
                 
                 this->internal_clock -= c;
                 this->scanline_time += c;
@@ -171,15 +169,15 @@ void PPU::Tick(uint8_t cycles)
                     uint8_t x = this->current_line_x;
 
                     this->current_line_x++;
-                    if(x < scx % 8)
+                    if (x < scx % 8)
                     {
-                        this->screen_pixels[x + ly * 160] = 0;
+                        //this->screen_pixels[x + ly * 160] = 0;
                         continue;
                     }
 
-                    if (x < 160)
+                    if (x < 160 + (scx % 8))
                     {
-                        this->screen_pixels[x + ly * 160] = resulting_color;
+                        this->screen_pixels[x % 160 + ly * 160] = resulting_color;
                     }
                     else
                     {
@@ -187,10 +185,9 @@ void PPU::Tick(uint8_t cycles)
                     }
                 }
 
-
                 this->background_fetcher.pixel_count -= c;
                 
-                if(this->current_line_x >= 160 && this->background_fetcher.pixel_count == 0)
+                if(this->current_line_x >= (160 + scx % 8) && this->background_fetcher.pixel_count == 0)
                 {
                     this->background_fetcher.fetcher_x_position = 0;
                     this->SwitchMode(0);
