@@ -17,6 +17,7 @@ void Timer::IncrementTIMA()
     if(timer_counter + 1 > 0xFF)
     {
         this->gb->mmu->Write(0xFF05, this->gb->mmu->Read(0xFF06));
+        this->gb->cpu->SetInterruptFlag(2, true);
     }
     else
     {
@@ -61,7 +62,7 @@ void Timer::Update(uint32_t cycle_diff)
     this->internal_clock += cycle_diff * 4;
 
     uint8_t TAC = this->gb->mmu->Read(0xFF07);
-    if(TAC & 0x04 == 0)
+    if((TAC & 0x04) == 0)
     {
         // increment is disabled  
         return;

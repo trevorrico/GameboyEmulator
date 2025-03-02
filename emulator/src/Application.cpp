@@ -61,9 +61,81 @@ void Application::Run()
 		dt = glfwGetTime() - lastTime;
 		lastTime = glfwGetTime();
 
+		if (glfwGetKey(this->window, GLFW_KEY_Z) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(BUTTON_A);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(BUTTON_A);
+		}
+
+		if (glfwGetKey(this->window, GLFW_KEY_X) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(BUTTON_B);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(BUTTON_B);
+		}
+
+		if (glfwGetKey(this->window, GLFW_KEY_C) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(BUTTON_SELECT);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(BUTTON_SELECT);
+		}
+
+		if (glfwGetKey(this->window, GLFW_KEY_V) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(BUTTON_START);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(BUTTON_START);
+		}
+
+		if (glfwGetKey(this->window, GLFW_KEY_UP) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(DPAD_UP);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(DPAD_UP);
+		}
+
+		if (glfwGetKey(this->window, GLFW_KEY_DOWN) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(DPAD_DOWN);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(DPAD_DOWN);
+		}
+
+		if (glfwGetKey(this->window, GLFW_KEY_LEFT) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(DPAD_LEFT);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(DPAD_LEFT);
+		}
+
+		if (glfwGetKey(this->window, GLFW_KEY_RIGHT) == GLFW_RELEASE)
+		{
+			this->gameboy->OnInputReleased(DPAD_RIGHT);
+		}
+		else
+		{
+			this->gameboy->OnInputPressed(DPAD_RIGHT);
+		}
+
 		if(paused == false)
 		{
-			for(int i = 0; i < 5000; i++)
+			for(int i = 0; i < 2500; i++)
 			{
 				this->gameboy->Update(dt);
 				
@@ -164,7 +236,7 @@ void Application::RenderGUI()
 	{
 		ImGui::Begin("VRAM");
 
-		for (uint16_t i = 0x8000; i <= 0x9FFF; i++)
+		for (uint16_t i = 0xFE00; i <= 0xFE9F; i++)
 		{
 			ImGui::Text("0x%02X ", this->gameboy->mmu->Read(i));
 
@@ -188,6 +260,7 @@ void Application::RenderGUI()
 		ImGui::Text("SP: 0x%04X", gameboy->cpu->registers.SP);
 		ImGui::Text("PC: 0x%04X", gameboy->cpu->registers.PC);
 		ImGui::Text("OP: 0x%02X", gameboy->mmu->Read(gameboy->cpu->registers.PC));
+		ImGui::Text("JP: 0x%02X", gameboy->mmu->Read(0xFF00));
 		ImGui::Text("Z: %u | N: %u | H: %u | C: %u", 
 			gameboy->cpu->get_zero_flag(), 
 			gameboy->cpu->get_subtraction_flag(), 

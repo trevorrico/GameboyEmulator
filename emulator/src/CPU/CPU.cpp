@@ -32,7 +32,7 @@ bool CPU::ProcessInterrupt(uint8_t interrupts_fired, uint8_t bit, uint8_t addres
 		this->cycles += 5;
 
 		uint8_t IF = this->gb->mmu->Read(0xFF0F);
-		this->gb->mmu->Write(0xFF0F, IF & (0xFE << bit));
+		SetInterruptFlag(bit, false);
 		this->registers.PC = address;
 		IME = false;
 		return true;
@@ -47,15 +47,18 @@ void CPU::HandleInterrupts()
 	uint8_t IF = this->gb->mmu->Read(0xFF0F);
 
 	uint8_t interrupts_fired = IF & IE;
-	if(interrupts_fired == 0x00)
+	if((interrupts_fired & 0x1F) == 0x00)
 	{
-		halted = false;
 		return;
 	}
 
 	if(halted)
 	{
-		// TODO: Halt bug
+		if (IME == false)
+		{
+			halt_bug = true;
+		}
+
 		halted = false;
 	}
 
@@ -160,6 +163,7 @@ void CPU::SetInterruptFlag(uint8_t bit, bool value)
 	{
 		IF &= ~(0x01 << bit);
 	}
+	this->gb->mmu->Write(0xFF0F, IF);
 }
 
 uint32_t CPU::Step()
@@ -174,6 +178,8 @@ uint32_t CPU::Step()
 		this->cycles %= CLOCK_SPEED;
 		return diff;
 	}
+
+	uint16_t start_pc = this->registers.PC;
 
 	uint8_t opcode = this->gb->mmu->Read(this->registers.PC);
 
@@ -224,6 +230,12 @@ uint32_t CPU::Step()
 	else
 	{
 		this->ProcessOpcode(opcode);
+	}
+
+	if (this->halt_bug)
+	{
+		this->registers.PC = start_pc;
+		this->halt_bug = false;
 	}
 
 	uint32_t diff = this->cycles - start_cycles;

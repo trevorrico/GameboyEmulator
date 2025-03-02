@@ -48,13 +48,13 @@ public:
 
     void Tick(uint8_t cycles);
 
-    uint8_t ReadVRAM(uint16_t address);
-    void WriteVRAM(uint16_t address, uint8_t data);
+    uint8_t ReadVRAM(uint32_t address);
+    void WriteVRAM(uint32_t address, uint8_t data);
 
     bool IsVRAMAcessible();
 
-    uint8_t ReadOAM(uint16_t address);
-    void WriteOAM(uint16_t address, uint8_t data);
+    uint8_t ReadOAM(uint32_t address);
+    void WriteOAM(uint32_t address, uint8_t data);
 
     void SwitchMode(uint8_t mode);
 

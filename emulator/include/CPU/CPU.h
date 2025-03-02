@@ -85,7 +85,7 @@ public:
 
 	uint32_t log_lines = 0;
 private:
-	
+	bool halt_bug = false;
 
 	std::stringstream log_string;
 

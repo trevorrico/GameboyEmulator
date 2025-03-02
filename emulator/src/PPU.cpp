@@ -19,8 +19,31 @@ void PPU::Tick(uint8_t cycles)
     uint8_t lcd_control = this->gb->mmu->Read(0xFF40);
     if((lcd_control & 0x80) == 0)
     {
-        return; // disabled
+        //return; // disabled
     }
+
+    uint8_t ly = this->gb->mmu->Read(0xFF44);
+    uint8_t lcy = this->gb->mmu->Read(0xFF45);
+    uint8_t lcd_status = this->gb->mmu->Read(0xFF41);
+    SET_BIT(lcd_status, 0);
+    
+    if (ly == lcy)
+    {
+        if (GET_BIT(lcd_status, 6) == 0)
+        {
+            SET_BIT(lcd_status, 6);
+            this->gb->cpu->SetInterruptFlag(1, true);
+        }
+
+        SET_BIT(lcd_status, 1);
+    }
+    else
+    {
+        CLEAR_BIT(lcd_status, 6);
+        CLEAR_BIT(lcd_status, 1);;
+    }
+
+    this->gb->mmu->Write(0xFF41, lcd_status);
 
     this->internal_clock += cycles * 4;
 
@@ -48,7 +71,6 @@ void PPU::Tick(uint8_t cycles)
     }
     else if(this->mode == 3)
     {
-        uint8_t ly = this->gb->mmu->Read(0xFF44);
         uint8_t scy = this->gb->mmu->Read(0xFF42);
         uint8_t scx = this->gb->mmu->Read(0xFF43);
 
@@ -314,14 +336,14 @@ void PPU::PushToLCD(uint8_t cycles)
     }
 }
 
-uint8_t PPU::ReadVRAM(uint16_t address)
+uint8_t PPU::ReadVRAM(uint32_t address)
 {
     assert(address >= 0x8000 && address <= 0x9FFF);
 
     return this->vram[address - 0x8000];
 }
 
-void PPU::WriteVRAM(uint16_t address, uint8_t data)
+void PPU::WriteVRAM(uint32_t address, uint8_t data)
 {
     assert(address >= 0x8000 && address <= 0x9FFF);
 
@@ -333,17 +355,18 @@ bool PPU::IsVRAMAcessible()
     return mode != 3;
 }
 
-uint8_t PPU::ReadOAM(uint16_t address)
+uint8_t PPU::ReadOAM(uint32_t address)
 {
     assert(address >= 0xFE00 && address <= 0xFE9F);
 
     return this->oam[address - 0xFE00];
 }
 
-void PPU::WriteOAM(uint16_t address, uint8_t data)
+void PPU::WriteOAM(uint32_t address, uint8_t data)
 {
     assert(address >= 0xFE00 && address <= 0xFE9F);
 
+    //std::cout << "New oam data: " << (uint32_t)data << std::endl;
     this->oam[address - 0xFE00] = data;
 }
 
@@ -381,10 +404,30 @@ void PPU::SwitchMode(uint8_t m)
     }
 
     uint8_t ly = this->gb->mmu->Read(0xFF44);
+    uint8_t lcd_status = this->gb->mmu->Read(0xFF41);
     uint8_t lcd_control = this->gb->mmu->Read(0xFF40);
+
+    if (this->mode == 0)
+    {
+        CLEAR_BIT(lcd_status, 3);
+    }
+    else if (this->mode == 1)
+    {
+        CLEAR_BIT(lcd_status, 4);
+    }
+    else if (this->mode == 2)
+    {
+        CLEAR_BIT(lcd_status, 5);
+    }
 
     if(m == 2) // OAM Scan
     {
+        if (GET_BIT(lcd_status, 5) == 0)
+        {
+            SET_BIT(lcd_status, 5);
+            this->gb->cpu->SetInterruptFlag(1, true);
+        }
+
         uint8_t sprite_height = (lcd_control & 0x04) ? 16 : 8;
 
         this->pause_time = 80;  
@@ -393,14 +436,14 @@ void PPU::SwitchMode(uint8_t m)
         this->object_count = 0;
         for(int i = 0; i < 40; i++)
         {
-            uint16_t address = 0xFE00 + 0x04 * i;
+            uint16_t address = 4 * i;
             
             Sprite sp;
 
-            sp.y_pos = this->ReadOAM(address);
-            sp.x_pos = this->ReadOAM(address + 1);
-            sp.tile = this->ReadOAM(address + 2);
-            sp.flags = this->ReadOAM(address + 3);
+            sp.y_pos = this->oam[address];
+            sp.x_pos = this->oam[address + 1];
+            sp.tile = this->oam[address + 2];
+            sp.flags = this->oam[address + 3];
 
             //if(i == 0)
             //    std::cout << (uint32_t)sp.x_pos << " " << (uint32_t)sp.y_pos << " " << (uint32_t)sp.tile << " " << (uint32_t)sp.flags << std::endl;
@@ -434,6 +477,12 @@ void PPU::SwitchMode(uint8_t m)
     }
     else if(m == 0) // H-Blank
     {
+        if (GET_BIT(lcd_status, 3) == 0)
+        {
+            SET_BIT(lcd_status, 3);
+            this->gb->cpu->SetInterruptFlag(1, true);
+        }
+
         if(this->scanline_time < 456)
         {
             this->pause_time = 456 - this->scanline_time;
@@ -442,6 +491,12 @@ void PPU::SwitchMode(uint8_t m)
     }
     else if(m == 1) // V-Blank
     {
+        if (GET_BIT(lcd_status, 4) == 0)
+        {
+            SET_BIT(lcd_status, 4);
+            this->gb->cpu->SetInterruptFlag(1, true);
+        }
+
         this->gb->cpu->SetInterruptFlag(0, true);
         this->window_line_counter = 0;
     }
