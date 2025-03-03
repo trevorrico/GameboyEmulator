@@ -135,7 +135,7 @@ void Application::Run()
 
 		if(paused == false)
 		{
-			for(int i = 0; i < 2500; i++)
+			for(int i = 0; i < 500; i++)
 			{
 				this->gameboy->Update(dt);
 				

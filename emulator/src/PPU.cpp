@@ -40,23 +40,29 @@ void PPU::Tick(uint8_t cycles)
     uint8_t ly = this->gb->mmu->Read(0xFF44);
     uint8_t lcy = this->gb->mmu->Read(0xFF45);
     uint8_t lcd_status = this->gb->mmu->Read(0xFF41);
-    SET_BIT(lcd_status, 0);
+
+    //this->gb->mmu->Write(0xFF42, (uint8_t)(glfwGetTime() * 8));
     
     if (ly == lcy)
     {
-        if (GET_BIT(lcd_status, 6) == 0)
-        {
-            SET_BIT(lcd_status, 6);
-            this->gb->cpu->SetInterruptFlag(1, true);
-        }
-
-        SET_BIT(lcd_status, 1);
+        this->gb->cpu->SetInterruptFlag(1, true);
+        
+        SET_BIT(lcd_status, 6);
+        SET_BIT(lcd_status, 2);
     }
     else
     {
         CLEAR_BIT(lcd_status, 6);
-        CLEAR_BIT(lcd_status, 1);;
+        CLEAR_BIT(lcd_status, 2);
     }
+
+    if (lcd_status & 0x1C)
+    {
+        this->gb->cpu->SetInterruptFlag(1, true);
+    }
+
+    lcd_status &= (~0x03);
+    lcd_status |= this->mode;
 
     this->gb->mmu->Write(0xFF41, lcd_status);
 
@@ -135,8 +141,8 @@ void PPU::Tick(uint8_t cycles)
                 {
                     bit = GET_BIT(lcd_control, 3);
 
-                    offset = (offset + (scx / 8)) & 0x1F;
-                    offset += 32 * (((ly + scy) & 0xFF) / 8);
+                    offset = (offset + ((scx / 8) & 0x1F)) ;
+                    offset += 32 * ((((ly + scy) & 0xFF) / 8) & 0x1F);
                 }
                 else
                 {
@@ -166,7 +172,7 @@ void PPU::Tick(uint8_t cycles)
         {
             if (this->fetcher_type == SPRITE)
             {
-                uint8_t offset = 2 * ((ly - current_rendering_sprite.y_pos + 16) % 8);
+                uint16_t offset = 2 * ((ly - current_rendering_sprite.y_pos + 16) % 8);
                 if (GET_BIT(current_rendering_sprite.flags, 6))
                 {
                     offset = 14 - offset;
@@ -175,7 +181,7 @@ void PPU::Tick(uint8_t cycles)
             }
             else
             {
-                uint8_t offset = 0;
+                uint16_t offset = 0;
                 if (this->fetcher_type == BACKGROUND)
                 {
                     offset = 2 * ((ly + scy) % 8);
@@ -215,7 +221,7 @@ void PPU::Tick(uint8_t cycles)
             // attempts to push fifo
             if (this->internal_clock >= 2)
             {
-                if (this->fetcher_type == SPRITE)
+                if (this->fetcher_type == SPRITE && this->fifo_pixel_count >= 8)
                 {
                     this->internal_clock -= 2;
                     this->scanline_time += 2;
@@ -225,9 +231,22 @@ void PPU::Tick(uint8_t cycles)
 
                     bool flipped = GET_BIT(current_rendering_sprite.flags, 5);
 
+                    uint8_t obp0 = this->gb->mmu->Read(0xFF48);
+                    uint8_t obp1 = this->gb->mmu->Read(0xFF49);
+
+                    uint8_t bgp = this->gb->mmu->Read(0xFF47);
+
                     uint8_t color = 0;
                     for (uint8_t i = 0; i < 8; i++)
                     {
+                        uint8_t pixel_x = current_rendering_sprite.x_pos + i;
+                        if (pixel_x < 8 || pixel_x >= 168 || pixel_x < this->current_line_x + 8)
+                        {
+                            continue;
+                        }
+
+                        uint8_t fifo_id = pixel_x - (this->current_line_x + 8);
+
                         if (flipped)
                         {
                             color = (GET_BIT(b0, i) << 1) | GET_BIT(b1, i);
@@ -236,21 +255,31 @@ void PPU::Tick(uint8_t cycles)
                         {
                             color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
                         }
-                        
 
                         // mix fifo
                         if (color > 0)
                         {
                             if (GET_BIT(current_rendering_sprite.flags, 7))
                             {
-                                if (this->fifo[i].color > 0)
+                                if (this->fifo[fifo_id].color != (GET_BIT(bgp, 0) | (GET_BIT(bgp, 1) << 1)))
                                 {
                                     continue;
                                 }
                             }
 
-                            this->fifo[i].color = color;
-                            this->fifo[i].type = SPRITE;
+                            if (GET_BIT(current_rendering_sprite.flags, 4))
+                            {
+                                // OBP1
+                                color = GET_BIT(obp1, color * 2) | (GET_BIT(obp1, color * 2 + 1) << 1);
+                            }
+                            else
+                            {
+                                // OBP0
+                                color = GET_BIT(obp0, color * 2) | (GET_BIT(obp0, color * 2 + 1) << 1);
+                            }  
+
+                            this->fifo[fifo_id].color = color;
+                            this->fifo[fifo_id].type = SPRITE;
                         }
                     }
 
@@ -337,7 +366,6 @@ void PPU::Tick(uint8_t cycles)
 
 void PPU::PushToLCD(uint8_t cycles)
 {
-    //std::cout << (uint32_t)this->fifo_pixel_count << std::endl;
     if (this->fifo_pixel_count > 8 && this->fetcher_type != SPRITE)
     {
         uint8_t ly = this->gb->mmu->Read(0xFF44);
@@ -352,6 +380,8 @@ void PPU::PushToLCD(uint8_t cycles)
                 break;
             }
 
+            this->fifo_clock--;
+
             // check objects in current X
             for (int i = 0; i < this->object_count; i++)
             {
@@ -362,8 +392,6 @@ void PPU::PushToLCD(uint8_t cycles)
                     return;
                 }
             }
-
-            this->fifo_clock--;
 
             // pop current pixel
             FIFOPixel pixel = this->fifo[0];
@@ -467,26 +495,13 @@ void PPU::SwitchMode(uint8_t m)
     uint8_t lcd_status = this->gb->mmu->Read(0xFF41);
     uint8_t lcd_control = this->gb->mmu->Read(0xFF40);
 
-    if (this->mode == 0)
-    {
-        CLEAR_BIT(lcd_status, 3);
-    }
-    else if (this->mode == 1)
-    {
-        CLEAR_BIT(lcd_status, 4);
-    }
-    else if (this->mode == 2)
-    {
-        CLEAR_BIT(lcd_status, 5);
-    }
+    CLEAR_BIT(lcd_status, 3);
+    CLEAR_BIT(lcd_status, 4);
+    CLEAR_BIT(lcd_status, 5);
 
     if(m == 2) // OAM Scan
     {
-        if (GET_BIT(lcd_status, 5) == 0)
-        {
-            SET_BIT(lcd_status, 5);
-            this->gb->cpu->SetInterruptFlag(1, true);
-        }
+        SET_BIT(lcd_status, 5);
 
         uint8_t sprite_height = (lcd_control & 0x04) ? 16 : 8;
 
@@ -539,11 +554,7 @@ void PPU::SwitchMode(uint8_t m)
     }
     else if(m == 0) // H-Blank
     {
-        if (GET_BIT(lcd_status, 3) == 0)
-        {
-            SET_BIT(lcd_status, 3);
-            this->gb->cpu->SetInterruptFlag(1, true);
-        }
+        SET_BIT(lcd_status, 3);
 
         if(this->scanline_time < 456)
         {
@@ -553,15 +564,13 @@ void PPU::SwitchMode(uint8_t m)
     }
     else if(m == 1) // V-Blank
     {
-        if (GET_BIT(lcd_status, 4) == 0)
-        {
-            SET_BIT(lcd_status, 4);
-            this->gb->cpu->SetInterruptFlag(1, true);
-        }
+        SET_BIT(lcd_status, 4);
 
         this->gb->cpu->SetInterruptFlag(0, true);
         this->window_line_counter = 0;
     }
     
     this->mode = m;
+
+    this->gb->mmu->Write(0xFF41, lcd_status);
 }

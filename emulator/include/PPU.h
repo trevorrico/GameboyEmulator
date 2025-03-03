@@ -1,6 +1,9 @@
 #ifndef EMULATOR_PPU_H_
 #define EMULATOR_PPU_H_
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include <stdint.h>
 #include <iostream>
 #include <bitset>
