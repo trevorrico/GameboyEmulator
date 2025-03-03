@@ -92,6 +92,8 @@ private:
 
     FIFOPixel fifo[16] = { 0 };
     uint8_t fifo_pixel_count = 0;
+
+    Sprite current_rendering_sprite = { 0 };
 };
 
 #endif

@@ -31,7 +31,7 @@ void MemoryBus::Write(uint32_t address, uint8_t data)
 		// TODO: Cycles for DMA transfer
 		for (uint8_t i = 0; i <= 0x9F; i++)
 		{
-			this->gb->ppu->WriteOAM(0xFE00 + i, this->Read((data << 8) | i));
+			this->gb->ppu->WriteOAM(0xFE00 + i, this->Read((data * 0x100) + i));
 		}
 
 		memory[0xFF46] = data;

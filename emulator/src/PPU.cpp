@@ -83,11 +83,23 @@ void PPU::Tick(uint8_t cycles)
                 {
                     if (this->object_buffer[i].x_pos <= this->current_line_x + 8)
                     {
-                        this->fetcher_stage = 0;
                         this->fetcher_type = SPRITE;
-                        
-                        this->sprite_fetcher.tile_id = this->object_buffer[i].tile;
-                        
+
+                        if (GET_BIT(lcd_control, 2))
+                        {
+                            this->sprite_fetcher.tile_id = this->object_buffer[i].tile;
+                            if (ly + 16 >= this->object_buffer[i].y_pos + 8)
+                            {
+                                SET_BIT(this->sprite_fetcher.tile_id, 0);
+                            }
+                        }
+                        else
+                        {
+                            this->sprite_fetcher.tile_id = this->object_buffer[i].tile;
+                        }
+
+                        this->current_rendering_sprite = this->object_buffer[i];
+
                         // remove this object from obj buffer
                         for (int j = i + 1; j < this->object_count; j++)
                         {
@@ -139,7 +151,12 @@ void PPU::Tick(uint8_t cycles)
         {
             if (this->fetcher_type == SPRITE)
             {
-                this->sprite_fetcher.tile_low_data = this->GetTile(this->sprite_fetcher.tile_id, true);
+                uint8_t offset = 2 * ((ly) % 8);
+                if (GET_BIT(current_rendering_sprite.flags, 6))
+                {
+                    offset = 14 - offset;
+                }
+                this->sprite_fetcher.tile_low_data = this->GetTile(this->sprite_fetcher.tile_id, true) + offset;
             }
             else
             {
@@ -190,19 +207,40 @@ void PPU::Tick(uint8_t cycles)
 
                     uint8_t b0 = this->gb->mmu->Read(this->sprite_fetcher.tile_high_data);
                     uint8_t b1 = this->gb->mmu->Read(this->sprite_fetcher.tile_low_data);
+
+                    bool flipped = GET_BIT(current_rendering_sprite.flags, 5);
+
+                    uint8_t color = 0;
                     for (uint8_t i = 0; i < 8; i++)
                     {
-                        uint8_t color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
+                        if (flipped)
+                        {
+                            color = (GET_BIT(b0, i) << 1) | GET_BIT(b1, i);
+                        }
+                        else
+                        {
+                            color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
+                        }
+                        
 
                         // mix fifo
                         if (color > 0)
                         {
+                            if (GET_BIT(current_rendering_sprite.flags, 7))
+                            {
+                                if (this->fifo[i].color > 0)
+                                {
+                                    continue;
+                                }
+                            }
+
                             this->fifo[i].color = color;
                             this->fifo[i].type = SPRITE;
                         }
                     }
 
                     this->fetcher_type = BACKGROUND;
+                    this->fetcher_stage = 0;
                 }
                 else
                 {
@@ -392,7 +430,6 @@ uint16_t PPU::GetTile(uint8_t id, bool obj)
         }
     }
 
-    std::cout << "qeeee" << std::endl;
     return 0x0;
 }
 
@@ -445,15 +482,17 @@ void PPU::SwitchMode(uint8_t m)
             sp.tile = this->oam[address + 2];
             sp.flags = this->oam[address + 3];
 
-            //if(i == 0)
-            //    std::cout << (uint32_t)sp.x_pos << " " << (uint32_t)sp.y_pos << " " << (uint32_t)sp.tile << " " << (uint32_t)sp.flags << std::endl;
-
             if (sp.x_pos > 0)
             {
                 if (ly + 16 >= sp.y_pos)
                 {
                     if (ly + 16 < sp.y_pos + sprite_height)
                     {
+                        if (sprite_height == 16)
+                        {
+                            CLEAR_BIT(sp.tile, 0);
+                        }
+
                         this->object_buffer[this->object_count] = sp;
                         this->object_count++;
 
