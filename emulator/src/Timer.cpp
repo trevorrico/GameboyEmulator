@@ -4,11 +4,18 @@
 Timer::Timer(GameBoy* gameboy)
 {
     this->gb = gameboy;
+
+    this->Reset();
 }
 
 Timer::~Timer()
 {
 
+}
+
+void Timer::Reset()
+{
+    this->gb->mmu->Write(0xFF04, 0xAB);
 }
 
 void Timer::IncrementTIMA()
@@ -59,14 +66,14 @@ void Timer::Update(uint32_t cycle_diff)
         }
     }
 
-    this->internal_clock += cycle_diff * 4;
-
     uint8_t TAC = this->gb->mmu->Read(0xFF07);
     if((TAC & 0x04) == 0)
     {
         // increment is disabled  
         return;
     }
+
+    this->internal_clock += cycle_diff * 4;
 
     uint32_t frequency = GetFrequencyFromTAC(TAC);
     if(this->internal_clock > CLOCK_SPEED / frequency)

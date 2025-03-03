@@ -46,6 +46,8 @@ public:
     PPU(GameBoy* gameboy);
     ~PPU();
 
+    void Reset();
+
     void Tick(uint8_t cycles);
 
     uint8_t ReadVRAM(uint32_t address);
@@ -59,6 +61,8 @@ public:
     void SwitchMode(uint8_t mode);
 
     uint32_t screen_pixels[160 * 144] = { 0 };
+
+    bool requested_vram_debug_update = false;
 private:
     uint16_t GetTile(uint8_t id, bool obj); // returns tile address
 

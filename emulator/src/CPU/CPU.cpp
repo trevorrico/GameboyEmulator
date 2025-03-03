@@ -31,7 +31,6 @@ bool CPU::ProcessInterrupt(uint8_t interrupts_fired, uint8_t bit, uint8_t addres
 	{
 		this->cycles += 5;
 
-		uint8_t IF = this->gb->mmu->Read(0xFF0F);
 		SetInterruptFlag(bit, false);
 		this->registers.PC = address;
 		IME = false;
@@ -225,11 +224,26 @@ uint32_t CPU::Step()
 	{
 		this->registers.PC++;
 		opcode = this->gb->mmu->Read(this->registers.PC);
+
+		uint32_t cycle_count = this->cycles;
 		this->ProcessCBOpcode(opcode);
+
+		this->cycles = cycle_count + opcode_cb_cycles[opcode];
 	}
 	else
 	{
+		uint32_t cycle_count = this->cycles;
 		this->ProcessOpcode(opcode);
+
+		if (taken_conditional)
+		{
+			this->cycles = cycle_count + opcode_conditional_taken_cycles[opcode];
+			taken_conditional = false;
+		}
+		else
+		{
+			this->cycles = cycle_count + opcode_cycles[opcode];
+		}
 	}
 
 	if (this->halt_bug)

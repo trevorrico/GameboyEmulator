@@ -559,6 +559,7 @@ void CPU::opcode_JR_condition(bool condition)
 	if(condition)
 	{
 		opcode_JR();
+		this->taken_conditional = true;
 	}
 	else
 	{
@@ -685,6 +686,7 @@ void CPU::opcode_RET_cond(uint8_t cond)
 	{
 		opcode_RET();
 		this->cycles += 1;
+		this->taken_conditional = true;
 	}
 	else
 	{
@@ -713,6 +715,7 @@ void CPU::opcode_JP_cond(uint8_t cond)
 	if(cond)
 	{
 		opcode_JP_n16();
+		this->taken_conditional = true;
 	}
 	else
 	{
@@ -745,6 +748,7 @@ void CPU::opcode_CALL_cond(uint8_t cond)
 	if(cond)
 	{
 		opcode_CALL();
+		this->taken_conditional = true;
 	}
 	else
 	{

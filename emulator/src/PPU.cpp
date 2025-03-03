@@ -5,13 +5,28 @@ PPU::PPU(GameBoy* gameboy)
 {
     this->gb = gameboy;
 
-    this->SwitchMode(2);
-    this->fetcher_type = BACKGROUND;
+    this->Reset();
 }
 
 PPU::~PPU()
 {
 
+}
+
+void PPU::Reset()
+{
+    this->SwitchMode(2);
+    this->fetcher_type = BACKGROUND;
+    
+    for (int i = 0; i <= 0x1FFF; i++)
+    {
+        this->vram[i] = 0;
+    }
+
+    for (int i = 0; i <= 0x9F; i++)
+    {
+        this->oam[i] = 0;
+    }
 }
 
 void PPU::Tick(uint8_t cycles)
@@ -151,7 +166,7 @@ void PPU::Tick(uint8_t cycles)
         {
             if (this->fetcher_type == SPRITE)
             {
-                uint8_t offset = 2 * ((ly) % 8);
+                uint8_t offset = 2 * ((ly - current_rendering_sprite.y_pos + 16) % 8);
                 if (GET_BIT(current_rendering_sprite.flags, 6))
                 {
                     offset = 14 - offset;
@@ -254,9 +269,15 @@ void PPU::Tick(uint8_t cycles)
 
                         uint8_t b0 = this->gb->mmu->Read(this->background_fetcher.tile_high_data);
                         uint8_t b1 = this->gb->mmu->Read(this->background_fetcher.tile_low_data);
+
+                        uint8_t bgp = this->gb->mmu->Read(0xFF47);
+
                         for (uint8_t i = 0; i < 8; i++)
                         {
-                            this->fifo[this->fifo_pixel_count + i].color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
+                            uint8_t color = (GET_BIT(b0, 7 - i) << 1) | GET_BIT(b1, 7 - i);
+                            uint8_t palette_color = GET_BIT(bgp, color * 2) | (GET_BIT(bgp, color * 2 + 1) << 1);
+                            
+                            this->fifo[this->fifo_pixel_count + i].color = palette_color;
                             this->fifo[this->fifo_pixel_count + i].type = BACKGROUND;
                         }
 
@@ -302,6 +323,8 @@ void PPU::Tick(uint8_t cycles)
                 // if it reached the end of vblank then reset scanline y
                 this->gb->mmu->Write(0xFF44, 0);
                 this->SwitchMode(2);
+
+                this->requested_vram_debug_update = true;
             }
             else
             {

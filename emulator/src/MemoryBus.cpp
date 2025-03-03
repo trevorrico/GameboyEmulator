@@ -17,6 +17,8 @@ MemoryBus::~MemoryBus()
 void MemoryBus::Reset()
 {
 	memset(memory, 0, 0x10000);
+
+	memory[0xFF00] = 0xFF;
 }
 
 void MemoryBus::Write(uint32_t address, uint8_t data)
@@ -40,6 +42,12 @@ void MemoryBus::Write(uint32_t address, uint8_t data)
 	
 	if(gb->active_cartridge != nullptr)
 	{
+		if (address == 0xFF00)
+		{
+			memory[0xFF00] = this->gb->UpdateInput(data);
+			return;
+		}
+
 		if(address <= 0x7FFF)
 		{
 			gb->active_cartridge->WriteROM(address, data);

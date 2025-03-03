@@ -13,6 +13,9 @@ public:
     ~Renderer();
 
     void Render(GameBoy* gb);
+    void RenderVRAMDebug(GameBoy* gb);
+
+    GLuint vram_texture;
 private:
     GLuint vao;
 	GLuint vbo;

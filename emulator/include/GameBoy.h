@@ -14,10 +14,10 @@
 
 enum Joypad
 {
-	DPAD_UP = 0,
-	DPAD_DOWN = 1,
-	DPAD_LEFT = 2,
-	DPAD_RIGHT = 3,
+	DPAD_RIGHT = 0,
+	DPAD_LEFT = 1,
+	DPAD_UP = 2,
+	DPAD_DOWN = 3,
 	BUTTON_A = 4,
 	BUTTON_B = 5,
 	BUTTON_SELECT = 6,
@@ -40,6 +40,8 @@ public:
 	
 	void OnInputPressed(Joypad button);
 	void OnInputReleased(Joypad button);
+
+	uint8_t UpdateInput(uint8_t joyp);
 
 	bool LoadROM(std::string rom_path);
 private:

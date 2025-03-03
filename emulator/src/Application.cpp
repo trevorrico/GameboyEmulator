@@ -150,6 +150,12 @@ void Application::Run()
 			}
 		}
 
+		if (this->gameboy->ppu->requested_vram_debug_update)
+		{
+			this->gameboy->ppu->requested_vram_debug_update = false;
+			this->renderer->RenderVRAMDebug(this->gameboy);
+		}
+
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -236,15 +242,7 @@ void Application::RenderGUI()
 	{
 		ImGui::Begin("VRAM");
 
-		for (uint16_t i = 0xFE00; i <= 0xFE9F; i++)
-		{
-			ImGui::Text("0x%02X ", this->gameboy->mmu->Read(i));
-
-			if (i == 0 || i % 16 != 0)
-			{
-				ImGui::SameLine();
-			}
-		}
+		ImGui::Image((ImTextureID)(intptr_t)this->renderer->vram_texture, ImVec2(128 * 2, 192 * 2));
 
 		ImGui::End();
 	}

@@ -15,6 +15,8 @@ public:
     Timer(GameBoy* gameboy);
     ~Timer();
 
+    void Reset();
+
     void Update(uint32_t cycle_diff);
 
     void IncrementTIMA();
