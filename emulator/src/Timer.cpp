@@ -69,7 +69,8 @@ void Timer::Update(uint32_t cycle_diff)
     uint8_t TAC = this->gb->mmu->Read(0xFF07);
     if((TAC & 0x04) == 0)
     {
-        // increment is disabled  
+        // increment is disabled
+        this->internal_clock = 0;
         return;
     }
 

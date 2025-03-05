@@ -75,7 +75,7 @@ public:
 	~CPU();
 
 	void Reset();
-	uint32_t Step();
+	void Tick();
 
 	struct Registers
 	{
@@ -142,6 +142,8 @@ public:
 
 	uint32_t log_lines = 0;
 private:
+	uint8_t internal_clock = 0;
+
 	bool halt_bug = false;
 	bool taken_conditional = false;
 

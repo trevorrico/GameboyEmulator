@@ -36,6 +36,8 @@ private:
 
 	Renderer* renderer;
 
+	float dt = 0.0;
+
 	// Gameboy variables
 	GameBoy* gameboy;
 

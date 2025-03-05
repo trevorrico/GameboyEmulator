@@ -30,6 +30,7 @@ bool CPU::ProcessInterrupt(uint8_t interrupts_fired, uint8_t bit, uint8_t addres
 	if(interrupts_fired & (0x01 << bit))
 	{
 		this->cycles += 5;
+		this->internal_clock += 5;
 
 		SetInterruptFlag(bit, false);
 		this->registers.PC = address;
@@ -165,8 +166,14 @@ void CPU::SetInterruptFlag(uint8_t bit, bool value)
 	this->gb->mmu->Write(0xFF0F, IF);
 }
 
-uint32_t CPU::Step()
+void CPU::Tick()
 {
+	if (this->internal_clock > 0)
+	{
+		this->internal_clock--;
+		return;
+	}
+
 	uint32_t start_cycles = this->cycles;
 
 	HandleInterrupts();
@@ -175,7 +182,7 @@ uint32_t CPU::Step()
 	{
 		uint32_t diff = this->cycles - start_cycles;
 		this->cycles %= CLOCK_SPEED;
-		return diff;
+		return;
 	}
 
 	uint16_t start_pc = this->registers.PC;
@@ -228,22 +235,28 @@ uint32_t CPU::Step()
 		uint32_t cycle_count = this->cycles;
 		this->ProcessCBOpcode(opcode);
 
-		this->cycles = cycle_count + opcode_cb_cycles[opcode];
+		uint8_t increment = opcode_cb_cycles[opcode];
+		this->cycles = cycle_count + increment;
+		this->internal_clock += increment;
 	}
 	else
 	{
 		uint32_t cycle_count = this->cycles;
 		this->ProcessOpcode(opcode);
 
+		uint8_t increment = 0;
 		if (taken_conditional)
 		{
-			this->cycles = cycle_count + opcode_conditional_taken_cycles[opcode];
+			increment = opcode_conditional_taken_cycles[opcode];
 			taken_conditional = false;
 		}
 		else
 		{
-			this->cycles = cycle_count + opcode_cycles[opcode];
+			increment = opcode_cycles[opcode];
 		}
+
+		this->cycles = cycle_count + increment;
+		this->internal_clock += increment;
 	}
 
 	if (this->halt_bug)
@@ -254,5 +267,5 @@ uint32_t CPU::Step()
 
 	uint32_t diff = this->cycles - start_cycles;
 	this->cycles %= CLOCK_SPEED;
-	return diff;
+	//return diff;
 }

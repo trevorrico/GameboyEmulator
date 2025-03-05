@@ -1,18 +1,82 @@
 #include "Cartridge.h"
 
+Mapper::Mapper(CartridgeHeader& header)
+{
+	// Get rom and ram size
+	uint64_t rom_size = 0x8000 * (1 << header.rom_size);
+
+	uint64_t ram_size = 0;
+	switch (header.ram_size)
+	{
+	case RAM_NONE: ram_size = 0; break;
+	case RAM_8KB: ram_size = 8196; break;
+	case RAM_32KB: ram_size = 32768; break;
+	case RAM_128KB: ram_size = 131072; break;
+	case RAM_64KB: ram_size = 65536; break;
+	}
+
+	// Get the amount of banks it is needed for each
+	uint8_t rom_bank_count = rom_size / 0x4000;
+	uint8_t ram_bank_count = ram_size / 0x2000;
+
+	// Allocate enough rom
+	this->rom = new uint8_t[rom_size];
+	this->ram = new uint8_t[ram_size];
+
+	// Reset ram to 0
+	memset(this->rom, 0, rom_size);
+
+	// Reset ram to 0
+	memset(this->ram, 0, ram_size);
+
+	this->allocated_rom_size = rom_size;
+	this->allocated_ram_size = ram_size;
+}
+
+Mapper::~Mapper()
+{
+	delete[] this->rom;
+	delete[] this->ram;
+}
+
+NoMBC::NoMBC(CartridgeHeader& header) : Mapper(header)
+{
+
+}
+
+NoMBC::~NoMBC()
+{
+
+}
+
+uint8_t NoMBC::ReadROM(uint16_t address)
+{
+	return this->rom[address];
+}
+
+void NoMBC::WriteROM(uint16_t address, uint8_t value)
+{
+	this->rom[address] = value;
+}
+
+uint8_t NoMBC::ReadRAM(uint16_t address)
+{
+	return this->ram[address];
+}
+
+void NoMBC::WriteRAM(uint16_t address, uint8_t value)
+{
+	this->ram[address] = value;
+}
+
 Cartridge::Cartridge()
 {
-	this->ram = nullptr;
-	this->rom = nullptr;
+	
 }
 
 Cartridge::~Cartridge()
 {
-	if(this->ram)
-	{
-		delete[] this->ram;
-		delete[] this->rom;
-	}
+	delete this->active_mapper;
 }
 
 bool Cartridge::LoadROM(std::string path, uint8_t* rom, size_t data_size)
@@ -20,42 +84,26 @@ bool Cartridge::LoadROM(std::string path, uint8_t* rom, size_t data_size)
 	this->path = path;
 
 	bool result = LoadCartridgeHeader(rom);
-	if(result)
+	if (result)
 	{
 		if (data_size % 16384 != 0) {
 			std::cout << "ROM size must be a multiple of 16 KB" << std::endl;
 			return false;
 		}
 
-		// Get rom and ram size
-		uint64_t rom_size = 0x8000 * (1 << this->header.rom_size);
+		delete this->active_mapper;
 
-		uint64_t ram_size = 0;
-		switch(this->header.ram_size)
+		// Create mapper
+		switch (this->header.cartridge_type)
 		{
-		case RAM_NONE: ram_size = 0; break;
-		case RAM_8KB: ram_size = 8196; break;
-		case RAM_32KB: ram_size = 32768; break;
-		case RAM_128KB: ram_size = 131072; break;
-		case RAM_64KB: ram_size = 65536; break;
+		case ROM_ONLY:
+		default:
+			this->active_mapper = new NoMBC(this->header);
+			break;
 		}
-		
-		// Get the amount of banks it is needed for each
-		uint8_t rom_bank_count = rom_size / 0x4000;
-		uint8_t ram_bank_count = ram_size / 0x2000;
-		
-		// Allocate enough rom
-		this->rom = new uint8_t[rom_bank_count * 0x4000];
-		this->ram = new uint8_t[ram_bank_count * 0x2000];
-		
-		// Copy contents to the allocated memory
-		memcpy(this->rom, rom, data_size);
 
-		// Reset ram to 0
-		memset(this->ram, 0, ram_bank_count * 0x2000);
-		
-		this->allocated_rom_size = rom_bank_count * 0x4000;
-		this->allocated_ram_size = ram_bank_count * 0x2000;
+		// Copy contents to the allocated memory
+		memcpy(this->active_mapper->rom, rom, data_size);
 	}
 
 	return result;
@@ -145,69 +193,26 @@ uint8_t Cartridge::ReadROM(uint16_t address)
 {
 	assert(address <= 0x7FFF);
 
-	switch(header.cartridge_type)
-	{
-	case ROM_ONLY:
-		return this->rom[address];
-	default:
-		// Still didn't implement other types
-		return this->rom[address];
-	}
+	return this->active_mapper->ReadROM(address);
 }
 
 void Cartridge::WriteROM(uint16_t address, uint8_t value)
 {
 	assert(address <= 0x7FFF);
 
-	switch(header.cartridge_type)
-	{
-	case ROM_ONLY:
-		// fun fact: rom isn't writeable
-		break;
-	default:
-		// Still didn't implement other types	
-		this->rom[address] = value;
-	}
+	this->active_mapper->WriteROM(address, value);
 }
 
 uint8_t Cartridge::ReadRAM(uint16_t address)
 {
 	assert(address >= 0xA000 && address <= 0xBFFF);
 	
-	if(allocated_ram_size == 0)
-	{
-		return 0x00;
-	}
-
-	switch(header.cartridge_type)
-	{
-	case ROM_ONLY:
-		return this->ram[address - 0xA000];
-	default:
-		// Still didn't implement other types	
-		return this->ram[address - 0xA000];
-	}
-	
-	return 0;
+	return this->active_mapper->ReadRAM(address);
 }
 
 void Cartridge::WriteRAM(uint16_t address, uint8_t value)
 {
 	assert(address >= 0xA000 && address <= 0xBFFF);
 
-	if(allocated_ram_size == 0)
-	{
-		return;
-	}
-
-	if(this->ram)
-	switch(header.cartridge_type)
-	{
-	case ROM_ONLY:
-		this->ram[address - 0xA000] = value;
-		break;
-	default:
-		// Still didn't implement other types	
-		this->ram[address - 0xA000] = value;
-	}
+	this->active_mapper->WriteRAM(address, value);	
 }

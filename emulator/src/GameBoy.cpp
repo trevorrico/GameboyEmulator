@@ -27,14 +27,10 @@ void GameBoy::Update(float dt)
 	if(this->active_cartridge)
 	{
 		// tick components
-		uint32_t new_cycles = this->cpu->Step();
-		if (new_cycles == 0)
-		{
-			new_cycles = 1;
-		}
+		this->cpu->Tick();
 
-		this->timer->Update(new_cycles);
-		this->ppu->Tick(new_cycles);
+		this->timer->Update(1);
+		this->ppu->Tick(1);
 	}
 }
 

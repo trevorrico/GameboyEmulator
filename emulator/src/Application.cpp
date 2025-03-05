@@ -54,7 +54,7 @@ int Application::Initialize()
 
 void Application::Run()
 {
-	float dt = 0.0;
+	dt = 0.0;
 	float lastTime = glfwGetTime();
 	while(glfwWindowShouldClose(this->window) == false)
 	{
@@ -135,7 +135,7 @@ void Application::Run()
 
 		if(paused == false)
 		{
-			for(int i = 0; i < 500; i++)
+			for(int i = 0; i < 4194304 * min(1.0, dt) * 0.25; i++)
 			{
 				this->gameboy->Update(dt);
 				
@@ -250,6 +250,7 @@ void Application::RenderGUI()
 	if(show_cpu_debug)
 	{
 		ImGui::Begin("CPU Debug Viewer", &show_cpu_debug);
+		ImGui::Text("FPS: %.1f", 1.0f / this->dt);
 		ImGui::Text("Registers");
 		ImGui::Text("AF: 0x%04X", gameboy->cpu->registers.AF);
 		ImGui::Text("BC: 0x%04X", gameboy->cpu->registers.BC);

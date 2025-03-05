@@ -62,28 +62,60 @@ struct CartridgeHeader
 	RAMSize ram_size;
 };
 
+class Mapper
+{
+public:
+	Mapper(CartridgeHeader& header);
+	virtual ~Mapper();
+
+	virtual uint8_t ReadROM(uint16_t address) = 0;
+	virtual void WriteROM(uint16_t address, uint8_t value) = 0;
+
+	virtual uint8_t ReadRAM(uint16_t address) = 0;
+	virtual void WriteRAM(uint16_t address, uint8_t value) = 0;
+
+	uint8_t* rom;
+	uint8_t* ram;
+
+	size_t allocated_ram_size;
+	size_t allocated_rom_size;
+private:
+
+};
+
+class NoMBC : public Mapper
+{
+public:
+	NoMBC(CartridgeHeader& header);
+	~NoMBC();
+
+	uint8_t ReadROM(uint16_t address) override;
+	void WriteROM(uint16_t address, uint8_t value) override;
+
+	uint8_t ReadRAM(uint16_t address) override;
+	void WriteRAM(uint16_t address, uint8_t value) override;
+private:
+
+};
+
 class Cartridge
 {
 public:
 	Cartridge();
 	~Cartridge();
 
+	bool LoadROM(std::string path, uint8_t* rom, size_t data_size);
+
 	uint8_t ReadROM(uint16_t address);
 	void WriteROM(uint16_t address, uint8_t value);
-	
+
 	uint8_t ReadRAM(uint16_t address);
 	void WriteRAM(uint16_t address, uint8_t value);
 
-	bool LoadROM(std::string path, uint8_t* rom, size_t data_size);
-
 	std::string path;
-	CartridgeHeader header;
+	CartridgeHeader header = {0};
 private:
-	uint8_t* rom;
-	uint8_t* ram;
-
-	size_t allocated_ram_size;
-	size_t allocated_rom_size;
+	Mapper* active_mapper = nullptr;
 
 	bool LoadCartridgeHeader(uint8_t* rom);
 };
