@@ -28,6 +28,12 @@ void MemoryBus::Write(uint32_t address, uint8_t data)
 		std::cout << this->Read(0xFF01);
 	}
 
+	if (address == 0xFF04)
+	{
+		// div reset
+		memory[address] = 0;
+	}
+
 	if (address == 0xFF46)
 	{
 		// TODO: Cycles for DMA transfer

@@ -46,6 +46,7 @@ public:
 	bool LoadROM(std::string rom_path);
 private:
 	bool keys[8];
+	bool on_bootrom = false;
 };
 
 #endif

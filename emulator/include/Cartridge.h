@@ -126,6 +126,7 @@ public:
 	~Cartridge();
 
 	bool LoadROM(std::string path, uint8_t* rom, size_t data_size);
+	void UnloadBootrom();
 
 	uint8_t ReadROM(uint16_t address);
 	void WriteROM(uint16_t address, uint8_t value);
@@ -137,6 +138,7 @@ public:
 	CartridgeHeader header = {0};
 private:
 	Mapper* active_mapper = nullptr;
+	uint8_t stored_rom_binarys[256];
 
 	bool LoadCartridgeHeader(uint8_t* rom);
 };

@@ -18,7 +18,7 @@ void CPU::Reset()
 	this->registers.DE = 0x00D8;
 	this->registers.HL = 0x014D;
 	this->registers.SP = 0xFFFE;
-	this->registers.PC = 0x0100;
+	this->registers.PC = 0x0000;
 	this->cycles = 0;
 
 	this->IME = false;
@@ -181,6 +181,7 @@ void CPU::Tick()
 	if(this->halted)
 	{
 		uint32_t diff = this->cycles - start_cycles;
+		this->internal_clock += diff;
 		this->cycles %= CLOCK_SPEED;
 		return;
 	}
@@ -236,8 +237,8 @@ void CPU::Tick()
 		this->ProcessCBOpcode(opcode);
 
 		uint8_t increment = opcode_cb_cycles[opcode];
-		this->cycles = cycle_count + increment;
-		this->internal_clock += increment;
+		//this->cycles = cycle_count + increment;
+		//this->internal_clock += increment;
 	}
 	else
 	{
@@ -255,8 +256,8 @@ void CPU::Tick()
 			increment = opcode_cycles[opcode];
 		}
 
-		this->cycles = cycle_count + increment;
-		this->internal_clock += increment;
+		//this->cycles = cycle_count + increment;
+		//this->internal_clock += increment;
 	}
 
 	if (this->halt_bug)
@@ -266,6 +267,7 @@ void CPU::Tick()
 	}
 
 	uint32_t diff = this->cycles - start_cycles;
+	this->internal_clock += diff;
 	this->cycles %= CLOCK_SPEED;
 	//return diff;
 }

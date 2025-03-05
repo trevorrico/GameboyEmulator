@@ -26,6 +26,15 @@ void GameBoy::Update(float dt)
 {
 	if(this->active_cartridge)
 	{
+		if (this->on_bootrom)
+		{
+			if (this->cpu->registers.PC == 0x100)
+			{
+				this->on_bootrom = false;
+				this->active_cartridge->UnloadBootrom();
+			}
+		}
+
 		// tick components
 		this->cpu->Tick();
 
@@ -104,6 +113,8 @@ bool GameBoy::LoadROM(std::string rom_path)
 		this->cpu->Reset();
 		this->ppu->Reset();
 		this->timer->Reset();
+
+		this->on_bootrom = true;
 
 		file.close();
 		return true;
