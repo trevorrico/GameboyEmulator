@@ -12,12 +12,12 @@
 enum CartridgeType
 {
 	ROM_ONLY,
-	MBC1,
-	MBC2,
-	MBC3,
-	MBC5,
-	MBC6,
-	MBC7
+	MBC1_TYPE,
+	MBC2_TYPE,
+	MBC3_TYPE,
+	MBC5_TYPE,
+	MBC6_TYPE,
+	MBC7_TYPE
 };
 
 enum ROMSize
@@ -79,6 +79,9 @@ public:
 
 	size_t allocated_ram_size;
 	size_t allocated_rom_size;
+
+	uint8_t rom_bank_count;
+	uint8_t ram_bank_count;
 private:
 
 };
@@ -96,6 +99,24 @@ public:
 	void WriteRAM(uint16_t address, uint8_t value) override;
 private:
 
+};
+
+class MBC1 : public Mapper
+{
+public:
+	MBC1(CartridgeHeader& header);
+	~MBC1();
+
+	uint8_t ReadROM(uint16_t address) override;
+	void WriteROM(uint16_t address, uint8_t value) override;
+
+	uint8_t ReadRAM(uint16_t address) override;
+	void WriteRAM(uint16_t address, uint8_t value) override;
+private:
+	uint8_t rom_bank_number = 1;
+	uint8_t ram_bank_number = 0;
+	uint8_t banking_mode = 0;
+	bool ram_enabled = false;
 };
 
 class Cartridge
