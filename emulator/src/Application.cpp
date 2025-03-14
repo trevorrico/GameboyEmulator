@@ -135,7 +135,7 @@ void Application::Run()
 
 		if(paused == false)
 		{
-			for(int i = 0; i < 4194304 * min(1.0, dt) * 0.25; i++)
+			for(int i = 0; i < 4194304 * std::min(1.0f, dt) * 0.25; i++)
 			{
 				this->gameboy->Update(dt);
 				

@@ -14,6 +14,7 @@
 #include "Renderer.h"
 
 #include <iostream>
+#include <algorithm>
 
 class Application
 {

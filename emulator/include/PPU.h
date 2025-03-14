@@ -87,7 +87,7 @@ private:
     uint8_t fetcher_stage = 0;
     FetcherType fetcher_type;
     Fetcher background_fetcher;
-    bool first_background_fetch = true;
+    bool reached_window_in_frame = false;
     Fetcher sprite_fetcher;
 
 

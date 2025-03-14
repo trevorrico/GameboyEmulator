@@ -324,6 +324,12 @@ void PPU::Tick(uint8_t cycles)
     {
         // go to next scanline
         uint8_t ly = this->gb->mmu->Read(0xFF44);
+
+        if(this->reached_window_in_frame)
+        {
+            this->window_line_counter++;
+        }
+
         this->gb->mmu->Write(0xFF44, ly + 1);
         
         this->current_line_x = 0;
@@ -370,6 +376,14 @@ void PPU::PushToLCD(uint8_t cycles)
     {
         uint8_t ly = this->gb->mmu->Read(0xFF44);
         uint8_t scx = this->gb->mmu->Read(0xFF43);
+        uint8_t lcdc = this->gb->mmu->Read(0xFF40);
+        uint8_t wy = this->gb->mmu->Read(0xFF4A);
+        uint8_t wx = this->gb->mmu->Read(0xFF4B);
+
+        if(wy == ly)
+        {
+            reached_window_in_frame = true;
+        }
 
         this->fifo_clock += cycles * 4;
 
@@ -381,6 +395,25 @@ void PPU::PushToLCD(uint8_t cycles)
             }
 
             this->fifo_clock--;
+
+            if(this->fetcher_type == BACKGROUND)
+            {
+                // window fetch
+                if(GET_BIT(lcdc, 5))
+                {
+                    if(reached_window_in_frame)
+                    {
+                        if(current_line_x >= wx - 7)
+                        {
+                            this->fifo_pixel_count = 0;
+                            this->background_fetcher.fetcher_x_position = 0;
+                            this->fetcher_stage = 0;
+                            this->fetcher_type = WINDOW;
+                            return;
+                        }
+                    }
+                }
+            }
 
             // check objects in current X
             for (int i = 0; i < this->object_count; i++)
@@ -549,6 +582,7 @@ void PPU::SwitchMode(uint8_t m)
         this->line_processed_pixel_count = 0;
         this->current_line_x = 0;
         this->background_fetcher.fetcher_x_position = 0;
+        this->fetcher_type = BACKGROUND;
 
         this->fifo_pixel_count = 0;
     }
@@ -568,6 +602,7 @@ void PPU::SwitchMode(uint8_t m)
 
         this->gb->cpu->SetInterruptFlag(0, true);
         this->window_line_counter = 0;
+        this->reached_window_in_frame = false;
     }
     
     this->mode = m;
