@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <limits>
 
 class Application
 {
@@ -49,6 +50,9 @@ private:
 	uint32_t current_breakpoint_item = 0;
 	std::string hex_val = "0000";
 	bool paused = false;
+
+	float vram_debug_image_scale = 1.0;
+	VRAMDebugInfo vram_render_info;
 
 	// Breakpoints
 	std::vector<uint16_t> breakpoints;

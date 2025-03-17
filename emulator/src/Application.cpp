@@ -135,7 +135,12 @@ void Application::Run()
 
 		if(paused == false)
 		{
-			for(int i = 0; i < 4194304 * std::min(1.0f, dt) * 0.25; i++)
+			uint32_t cycle_count = 4194304 / 4;
+			if (dt < 1.0)
+			{
+				cycle_count *= dt;
+			}
+			for(int i = 0; i < cycle_count; i++)
 			{
 				this->gameboy->Update(dt);
 				
@@ -153,7 +158,7 @@ void Application::Run()
 		if (this->gameboy->ppu->requested_vram_debug_update)
 		{
 			this->gameboy->ppu->requested_vram_debug_update = false;
-			this->renderer->RenderVRAMDebug(this->gameboy);
+			this->renderer->RenderVRAMDebug(this->gameboy, this->vram_render_info);
 		}
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -183,6 +188,41 @@ void Application::ConfigureImGui()
 	// Configure backends
 	ImGui_ImplGlfw_InitForOpenGL(this->window, true);
 	ImGui_ImplOpenGL3_Init("#version 430 core");
+}
+
+inline bool DrawTabButton(const char* label, bool selected)
+{
+	ImGuiStyle& style = ImGui::GetStyle();
+	ImVec2 itemSpacing = style.ItemSpacing;
+	ImVec4 color = style.Colors[ImGuiCol_Button];
+	ImVec4 colorActive = style.Colors[ImGuiCol_ButtonActive];
+	ImVec4 colorHover = style.Colors[ImGuiCol_ButtonHovered];
+	style.ItemSpacing.x = 0;
+
+	// push the style
+	if (selected)
+	{
+		style.Colors[ImGuiCol_Button] = colorActive;
+		style.Colors[ImGuiCol_ButtonActive] = colorActive;
+		style.Colors[ImGuiCol_ButtonHovered] = colorActive;
+	}
+	else
+	{
+		style.Colors[ImGuiCol_Button] = color;
+		style.Colors[ImGuiCol_ButtonActive] = colorActive;
+		style.Colors[ImGuiCol_ButtonHovered] = colorHover;
+	}
+
+	// Draw the button
+	bool result = ImGui::Button(label);
+
+	// Restore the style
+	style.Colors[ImGuiCol_Button] = color;
+	style.Colors[ImGuiCol_ButtonActive] = colorActive;
+	style.Colors[ImGuiCol_ButtonHovered] = colorHover;
+	style.ItemSpacing = itemSpacing;
+
+	return result;
 }
 
 void Application::RenderGUI()
@@ -238,11 +278,105 @@ void Application::RenderGUI()
 		ImGui::EndMainMenuBar();
 	}
 
-	if (show_vram_view)
+	if (ImGui::Begin("VRAM", &show_vram_view, ImGuiWindowFlags_HorizontalScrollbar))
 	{
-		ImGui::Begin("VRAM");
+		ImGui::SliderFloat("Scale", &vram_debug_image_scale, 0.1f, 10.0f, "%.1f");
 
-		ImGui::Image((ImTextureID)(intptr_t)this->renderer->vram_texture, ImVec2(128 * 2, 192 * 2));
+		ImGuiStyle& style = ImGui::GetStyle();
+		ImVec2 itemSpacing = style.ItemSpacing;
+		ImVec4 color = style.Colors[ImGuiCol_Button];
+		ImVec4 colorActive = style.Colors[ImGuiCol_ButtonActive];
+		ImVec4 colorHover = style.Colors[ImGuiCol_ButtonHovered];
+
+		if (DrawTabButton("Background", this->vram_render_info.render_bg))
+		{
+			this->vram_render_info.render_bg = true;
+			this->vram_render_info.render_oam = false;
+			this->vram_render_info.render_tiles = false;
+		}
+
+		ImGui::SameLine();
+
+		if (DrawTabButton("Tiles", this->vram_render_info.render_tiles))
+		{
+			this->vram_render_info.render_bg = false;
+			this->vram_render_info.render_oam = false;
+			this->vram_render_info.render_tiles = true;
+		}
+
+		ImGui::SameLine();
+
+		if (DrawTabButton("OAM", this->vram_render_info.render_oam))
+		{
+			this->vram_render_info.render_bg = false;
+			this->vram_render_info.render_oam = true;
+			this->vram_render_info.render_tiles = false;
+		}
+
+		ImGui::Separator();
+
+		static int vram_debug_tab = 0;
+		//ImGui::RadioButton("tile", &vram_de)
+
+		ImVec2 win_size = ImGui::GetWindowSize();
+		win_size.x -= 32;
+
+		if (this->vram_render_info.render_bg)
+		{
+			ImGui::Text("Map address:");
+
+			if (ImGui::RadioButton("0x9800", this->vram_render_info.map_use_window_address == false))
+			{
+				this->vram_render_info.map_use_window_address = false;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::RadioButton("0x9C00", this->vram_render_info.map_use_window_address))
+			{
+				this->vram_render_info.map_use_window_address = true;
+			}
+
+			ImGui::Text("Tile address:");
+			
+			if (ImGui::RadioButton("0x8000", this->vram_render_info.map_use_8000_tile_address))
+			{
+				this->vram_render_info.map_use_8000_tile_address = true;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::RadioButton("0x8800", this->vram_render_info.map_use_8000_tile_address == false))
+			{
+				this->vram_render_info.map_use_8000_tile_address = false;
+			}
+
+			ImGui::Checkbox("Show scroll view", &this->vram_render_info.show_bg_scroll_view);
+
+			ImGui::Image((ImTextureID)(intptr_t)this->renderer->background_vram_texture, ImVec2(256 * vram_debug_image_scale, 256 * vram_debug_image_scale));
+		}
+		else if (this->vram_render_info.render_tiles)
+		{
+			ImGui::Image((ImTextureID)(intptr_t)this->renderer->tiles_vram_texture, ImVec2(128 * vram_debug_image_scale, 192 * vram_debug_image_scale));
+		}
+		else if (this->vram_render_info.render_oam)
+		{
+			for (int y = 0; y < 5; y++)
+			{
+				for (int x = 0; x < 8; x++)
+				{
+					int i = x + y * 8;
+					ImGui::Image((ImTextureID)(intptr_t)this->renderer->oam_textures[i], ImVec2(16 * vram_debug_image_scale, 32 * vram_debug_image_scale));
+					ImGui::SameLine();
+					ImGui::Text("%d", i);
+
+					if (x != 7)
+					{
+						ImGui::SameLine(0.0, 16.0);
+					}
+				}
+			}
+		}
 
 		ImGui::End();
 	}
@@ -377,7 +511,7 @@ void Application::RenderGUI()
 		if(ImGui::Button("Remove") && this->breakpoints.size() > 0)
 		{
 			this->RemoveBreakpoint(this->current_breakpoint_item);
-			this->current_breakpoint_item % (this->breakpoints.size() - 1);
+			this->current_breakpoint_item %= (this->breakpoints.size() - 1);
 		}
 
 		ImGui::End();
