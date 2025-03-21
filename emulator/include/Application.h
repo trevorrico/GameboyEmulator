@@ -47,6 +47,7 @@ private:
 	bool show_cpu_debug = true;
 	bool show_vram_view = false;
 	bool show_breakpoints = false;
+	bool show_disassembly = false;
 	uint32_t current_breakpoint_item = 0;
 	std::string hex_val = "0000";
 	bool paused = false;

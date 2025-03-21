@@ -270,6 +270,7 @@ void Application::RenderGUI()
 		if(ImGui::BeginMenu("Debug"))
 		{
 			ImGui::MenuItem("Toggle CPU debug", nullptr, &show_cpu_debug);
+			ImGui::MenuItem("Toggle Disassembly", nullptr, &show_disassembly);
 			ImGui::MenuItem("Toggle Breakpoints", nullptr, &show_breakpoints);
 			ImGui::MenuItem("Toggle VRAM view", nullptr, &show_vram_view);
 			ImGui::EndMenu();
@@ -278,107 +279,109 @@ void Application::RenderGUI()
 		ImGui::EndMainMenuBar();
 	}
 
-	if (ImGui::Begin("VRAM", &show_vram_view, ImGuiWindowFlags_HorizontalScrollbar))
+	if(show_vram_view)
 	{
-		ImGui::SliderFloat("Scale", &vram_debug_image_scale, 0.1f, 10.0f, "%.1f");
-
-		ImGuiStyle& style = ImGui::GetStyle();
-		ImVec2 itemSpacing = style.ItemSpacing;
-		ImVec4 color = style.Colors[ImGuiCol_Button];
-		ImVec4 colorActive = style.Colors[ImGuiCol_ButtonActive];
-		ImVec4 colorHover = style.Colors[ImGuiCol_ButtonHovered];
-
-		if (DrawTabButton("Background", this->vram_render_info.render_bg))
+		if (ImGui::Begin("VRAM", &show_vram_view, ImGuiWindowFlags_HorizontalScrollbar))
 		{
-			this->vram_render_info.render_bg = true;
-			this->vram_render_info.render_oam = false;
-			this->vram_render_info.render_tiles = false;
-		}
+			ImGui::SliderFloat("Scale", &vram_debug_image_scale, 0.1f, 10.0f, "%.1f");
 
-		ImGui::SameLine();
+			ImGuiStyle& style = ImGui::GetStyle();
+			ImVec2 itemSpacing = style.ItemSpacing;
+			ImVec4 color = style.Colors[ImGuiCol_Button];
+			ImVec4 colorActive = style.Colors[ImGuiCol_ButtonActive];
+			ImVec4 colorHover = style.Colors[ImGuiCol_ButtonHovered];
 
-		if (DrawTabButton("Tiles", this->vram_render_info.render_tiles))
-		{
-			this->vram_render_info.render_bg = false;
-			this->vram_render_info.render_oam = false;
-			this->vram_render_info.render_tiles = true;
-		}
-
-		ImGui::SameLine();
-
-		if (DrawTabButton("OAM", this->vram_render_info.render_oam))
-		{
-			this->vram_render_info.render_bg = false;
-			this->vram_render_info.render_oam = true;
-			this->vram_render_info.render_tiles = false;
-		}
-
-		ImGui::Separator();
-
-		static int vram_debug_tab = 0;
-		//ImGui::RadioButton("tile", &vram_de)
-
-		ImVec2 win_size = ImGui::GetWindowSize();
-		win_size.x -= 32;
-
-		if (this->vram_render_info.render_bg)
-		{
-			ImGui::Text("Map address:");
-
-			if (ImGui::RadioButton("0x9800", this->vram_render_info.map_use_window_address == false))
+			if (DrawTabButton("Background", this->vram_render_info.render_bg))
 			{
-				this->vram_render_info.map_use_window_address = false;
+				this->vram_render_info.render_bg = true;
+				this->vram_render_info.render_oam = false;
+				this->vram_render_info.render_tiles = false;
 			}
 
 			ImGui::SameLine();
 
-			if (ImGui::RadioButton("0x9C00", this->vram_render_info.map_use_window_address))
+			if (DrawTabButton("Tiles", this->vram_render_info.render_tiles))
 			{
-				this->vram_render_info.map_use_window_address = true;
-			}
-
-			ImGui::Text("Tile address:");
-			
-			if (ImGui::RadioButton("0x8000", this->vram_render_info.map_use_8000_tile_address))
-			{
-				this->vram_render_info.map_use_8000_tile_address = true;
+				this->vram_render_info.render_bg = false;
+				this->vram_render_info.render_oam = false;
+				this->vram_render_info.render_tiles = true;
 			}
 
 			ImGui::SameLine();
 
-			if (ImGui::RadioButton("0x8800", this->vram_render_info.map_use_8000_tile_address == false))
+			if (DrawTabButton("OAM", this->vram_render_info.render_oam))
 			{
-				this->vram_render_info.map_use_8000_tile_address = false;
+				this->vram_render_info.render_bg = false;
+				this->vram_render_info.render_oam = true;
+				this->vram_render_info.render_tiles = false;
 			}
 
-			ImGui::Checkbox("Show scroll view", &this->vram_render_info.show_bg_scroll_view);
+			ImGui::Separator();
 
-			ImGui::Image((ImTextureID)(intptr_t)this->renderer->background_vram_texture, ImVec2(256 * vram_debug_image_scale, 256 * vram_debug_image_scale));
-		}
-		else if (this->vram_render_info.render_tiles)
-		{
-			ImGui::Image((ImTextureID)(intptr_t)this->renderer->tiles_vram_texture, ImVec2(128 * vram_debug_image_scale, 192 * vram_debug_image_scale));
-		}
-		else if (this->vram_render_info.render_oam)
-		{
-			for (int y = 0; y < 5; y++)
+			static int vram_debug_tab = 0;
+
+			ImVec2 win_size = ImGui::GetWindowSize();
+			win_size.x -= 32;
+
+			if (this->vram_render_info.render_bg)
 			{
-				for (int x = 0; x < 8; x++)
+				ImGui::Text("Map address:");
+
+				if (ImGui::RadioButton("0x9800", this->vram_render_info.map_use_window_address == false))
 				{
-					int i = x + y * 8;
-					ImGui::Image((ImTextureID)(intptr_t)this->renderer->oam_textures[i], ImVec2(16 * vram_debug_image_scale, 32 * vram_debug_image_scale));
-					ImGui::SameLine();
-					ImGui::Text("%d", i);
+					this->vram_render_info.map_use_window_address = false;
+				}
 
-					if (x != 7)
+				ImGui::SameLine();
+
+				if (ImGui::RadioButton("0x9C00", this->vram_render_info.map_use_window_address))
+				{
+					this->vram_render_info.map_use_window_address = true;
+				}
+
+				ImGui::Text("Tile address:");
+				
+				if (ImGui::RadioButton("0x8000", this->vram_render_info.map_use_8000_tile_address))
+				{
+					this->vram_render_info.map_use_8000_tile_address = true;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::RadioButton("0x8800", this->vram_render_info.map_use_8000_tile_address == false))
+				{
+					this->vram_render_info.map_use_8000_tile_address = false;
+				}
+
+				ImGui::Checkbox("Show scroll view", &this->vram_render_info.show_bg_scroll_view);
+
+				ImGui::Image((ImTextureID)(intptr_t)this->renderer->background_vram_texture, ImVec2(256 * vram_debug_image_scale, 256 * vram_debug_image_scale));
+			}
+			else if (this->vram_render_info.render_tiles)
+			{
+				ImGui::Image((ImTextureID)(intptr_t)this->renderer->tiles_vram_texture, ImVec2(128 * vram_debug_image_scale, 192 * vram_debug_image_scale));
+			}
+			else if (this->vram_render_info.render_oam)
+			{
+				for (int y = 0; y < 5; y++)
+				{
+					for (int x = 0; x < 8; x++)
 					{
-						ImGui::SameLine(0.0, 16.0);
+						int i = x + y * 8;
+						ImGui::Image((ImTextureID)(intptr_t)this->renderer->oam_textures[i], ImVec2(16 * vram_debug_image_scale, 32 * vram_debug_image_scale));
+						ImGui::SameLine();
+						ImGui::Text("%d", i);
+
+						if (x != 7)
+						{
+							ImGui::SameLine(0.0, 16.0);
+						}
 					}
 				}
 			}
-		}
 
-		ImGui::End();
+			ImGui::End();
+		}
 	}
 
 	if(show_cpu_debug)
@@ -392,8 +395,6 @@ void Application::RenderGUI()
 		ImGui::Text("HL: 0x%04X", gameboy->cpu->registers.HL);
 		ImGui::Text("SP: 0x%04X", gameboy->cpu->registers.SP);
 		ImGui::Text("PC: 0x%04X", gameboy->cpu->registers.PC);
-		ImGui::Text("OP: 0x%02X", gameboy->mmu->Read(gameboy->cpu->registers.PC));
-		ImGui::Text("JP: 0x%02X", gameboy->mmu->Read(0xFF00));
 		ImGui::Text("Z: %u | N: %u | H: %u | C: %u", 
 			gameboy->cpu->get_zero_flag(), 
 			gameboy->cpu->get_subtraction_flag(), 
@@ -414,14 +415,27 @@ void Application::RenderGUI()
 			ImGui::Text("HALTED: false");
 		}
 		
-		ImGui::Text("Cycle: %u", gameboy->cpu->cycles);
 		ImGui::Text("TIMA: %u", gameboy->mmu->Read(0xFF05));
 		ImGui::Text("DIV: %u", gameboy->mmu->Read(0xFF04));
 
+		ImGui::End();
+	}
+	
+	if(show_disassembly)
+	{
+		ImGui::Begin("Disassembly");
+
 		if(ImGui::Button("Cycle"))
 		{
-			this->gameboy->Update(0.0);
+			int c = this->gameboy->cpu->internal_clock + 1;
+			for(int i = 0; i < c; i++)
+			{
+				this->gameboy->Update(0.0);
+			}
 		}
+
+		ImGui::SameLine();
+
 		if(paused)
 		{
 			if(ImGui::Button("Unpause"))
@@ -436,6 +450,31 @@ void Application::RenderGUI()
 				paused = !paused;
 			}
 		}
+
+		ImGui::Separator();
+		ImGui::ListBoxHeader("Opcodes");
+
+		uint32_t i = 0;
+		while(i <= 0xFFFF)
+		{
+			uint8_t op = this->gameboy->mmu->Read(i);
+			std::string& str = opcode_names[op];
+			uint8_t len = opcode_lengths[op];
+			if(op == 0xCB)
+			{
+				op = this->gameboy->mmu->Read(i + 1);
+				str = opcode_cb_names[op];
+			}
+
+			std::stringstream stream;
+			stream << std::setw(4) << std::setfill('0') << std::uppercase << std::hex << i << " #" << (uint32_t)len << " " << str;
+
+			ImGui::Selectable(stream.str().c_str(), i == this->gameboy->cpu->registers.PC);
+			
+			i += len;
+		}
+
+		ImGui::ListBoxFooter();
 
 		ImGui::End();
 	}
