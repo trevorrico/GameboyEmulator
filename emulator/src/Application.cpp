@@ -133,6 +133,8 @@ void Application::Run()
 			this->gameboy->OnInputPressed(DPAD_RIGHT);
 		}
 
+		this->show_menu_bar = glfwGetKey(this->window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS;
+
 		if(paused == false)
 		{
 			uint32_t cycle_count = 4194304 / 4;
@@ -233,50 +235,53 @@ void Application::RenderGUI()
 	ImGui::NewFrame();
 
 	// ImGui commands here
-	if(ImGui::BeginMainMenuBar()) 
+	if(show_menu_bar)
 	{
-		if(ImGui::BeginMenu("File")) 
+		if(ImGui::BeginMainMenuBar()) 
 		{
-			if(ImGui::MenuItem("Open ROM")) 
+			if(ImGui::BeginMenu("File")) 
 			{
-				// Open file dialog
-				auto f = pfd::open_file("Choose rom", pfd::path::home(),
-				{ "GB Files (.gb)", "*.gb",
-				  "All Files", "*" },
-				pfd::opt::none);
-				
-				std::vector<std::string> files = f.result();
-				if(!files.empty())
+				if(ImGui::MenuItem("Open ROM")) 
 				{
-					std::string rom_path = files[0];
-					std::cout << "Opening ROM: " << rom_path << std::endl;
-					this->gameboy->LoadROM(rom_path);
+					// Open file dialog
+					auto f = pfd::open_file("Choose rom", pfd::path::home(),
+					{ "GB Files (.gb)", "*.gb",
+					"All Files", "*" },
+					pfd::opt::none);
+					
+					std::vector<std::string> files = f.result();
+					if(!files.empty())
+					{
+						std::string rom_path = files[0];
+						std::cout << "Opening ROM: " << rom_path << std::endl;
+						this->gameboy->LoadROM(rom_path);
+					}
 				}
+
+				if(ImGui::MenuItem("Save State"))
+				{
+					// TODO
+				}
+
+				if(ImGui::MenuItem("Load State"))
+				{
+					// TODO
+				}
+
+				ImGui::EndMenu();
 			}
 
-			if(ImGui::MenuItem("Save State"))
+			if(ImGui::BeginMenu("Debug"))
 			{
-				// TODO
+				ImGui::MenuItem("Toggle CPU debug", nullptr, &show_cpu_debug);
+				ImGui::MenuItem("Toggle Disassembly", nullptr, &show_disassembly);
+				ImGui::MenuItem("Toggle Breakpoints", nullptr, &show_breakpoints);
+				ImGui::MenuItem("Toggle VRAM view", nullptr, &show_vram_view);
+				ImGui::EndMenu();
 			}
 
-			if(ImGui::MenuItem("Load State"))
-			{
-				// TODO
-			}
-
-			ImGui::EndMenu();
+			ImGui::EndMainMenuBar();
 		}
-
-		if(ImGui::BeginMenu("Debug"))
-		{
-			ImGui::MenuItem("Toggle CPU debug", nullptr, &show_cpu_debug);
-			ImGui::MenuItem("Toggle Disassembly", nullptr, &show_disassembly);
-			ImGui::MenuItem("Toggle Breakpoints", nullptr, &show_breakpoints);
-			ImGui::MenuItem("Toggle VRAM view", nullptr, &show_vram_view);
-			ImGui::EndMenu();
-		}
-
-		ImGui::EndMainMenuBar();
 	}
 
 	if(show_vram_view)
@@ -423,60 +428,76 @@ void Application::RenderGUI()
 	
 	if(show_disassembly)
 	{
-		ImGui::Begin("Disassembly");
-
-		if(ImGui::Button("Cycle"))
+		if(ImGui::Begin("Disassembly", &show_disassembly));
 		{
-			int c = this->gameboy->cpu->internal_clock + 1;
-			for(int i = 0; i < c; i++)
-			{
-				this->gameboy->Update(0.0);
-			}
-		}
 
-		ImGui::SameLine();
-
-		if(paused)
-		{
-			if(ImGui::Button("Unpause"))
+			if(ImGui::Button("Cycle"))
 			{
-				paused = !paused;
-			}
-		}
-		else
-		{
-			if(ImGui::Button("Pause"))
-			{
-				paused = !paused;
-			}
-		}
-
-		ImGui::Separator();
-		ImGui::ListBoxHeader("Opcodes");
-
-		uint32_t i = 0;
-		while(i <= 0xFFFF)
-		{
-			uint8_t op = this->gameboy->mmu->Read(i);
-			std::string& str = opcode_names[op];
-			uint8_t len = opcode_lengths[op];
-			if(op == 0xCB)
-			{
-				op = this->gameboy->mmu->Read(i + 1);
-				str = opcode_cb_names[op];
+				int c = this->gameboy->cpu->internal_clock + 1;
+				for(int i = 0; i < c; i++)
+				{
+					this->gameboy->Update(0.0);
+				}
 			}
 
-			std::stringstream stream;
-			stream << std::setw(4) << std::setfill('0') << std::uppercase << std::hex << i << " #" << (uint32_t)len << " " << str;
+			ImGui::SameLine();
 
-			ImGui::Selectable(stream.str().c_str(), i == this->gameboy->cpu->registers.PC);
-			
-			i += len;
+			if(paused)
+			{
+				if(ImGui::Button("Unpause"))
+				{
+					paused = !paused;
+				}
+			}
+			else
+			{
+				if(ImGui::Button("Pause"))
+				{
+					paused = !paused;
+				}
+			}
+
+			ImGui::Separator();
+			ImGui::BeginTable("Opcodes", 3, ImGuiTableFlags_PadOuterX | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX);
+
+			ImGui::TableSetupColumn("Address");
+			ImGui::TableSetupColumn("Length");
+			ImGui::TableSetupColumn("Opcode");
+			ImGui::TableHeadersRow();
+
+			uint32_t i = 0;
+			while(i <= 0xFFFF)
+			{
+				ImGui::TableNextRow();
+
+				ImGui::TableSetColumnIndex(0);
+
+				ImGui::Selectable("", i == this->gameboy->cpu->registers.PC, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick);
+
+				uint8_t op = this->gameboy->mmu->Read(i);
+				std::string& str = opcode_names[op];
+				uint8_t len = opcode_lengths[op];
+				if(op == 0xCB)
+				{
+					op = this->gameboy->mmu->Read(i + 1);
+					str = opcode_cb_names[op];
+				}
+
+				ImGui::SameLine();
+
+				ImGui::Text("0x%04X", i);
+				ImGui::TableNextColumn();
+				ImGui::Text("%u", len);
+				ImGui::TableNextColumn();
+				ImGui::Text(str.c_str());
+
+				i += len;
+			}
+
+			ImGui::EndTable();
+
+			ImGui::End();
 		}
-
-		ImGui::ListBoxFooter();
-
-		ImGui::End();
 	}
 
 	if(show_breakpoints)

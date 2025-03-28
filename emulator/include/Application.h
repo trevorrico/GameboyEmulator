@@ -48,6 +48,7 @@ private:
 	bool show_vram_view = false;
 	bool show_breakpoints = false;
 	bool show_disassembly = false;
+	bool show_menu_bar = true;
 	uint32_t current_breakpoint_item = 0;
 	std::string hex_val = "0000";
 	bool paused = false;
