@@ -141,8 +141,9 @@ void PPU::Tick(uint8_t cycles)
                 {
                     bit = GET_BIT(lcd_control, 3);
 
-                    offset = (offset + ((scx / 8) & 0x1F)) ;
-                    offset += 32 * ((((ly + scy) & 0xFF) / 8) & 0x1F);
+                    offset = (offset + ((scx / 8)));
+                    offset %= 0x20;
+                    offset += 32 * ((((ly + scy) % 0x100) / 8));
                 }
                 else
                 {
@@ -159,7 +160,7 @@ void PPU::Tick(uint8_t cycles)
                     map_location = 0x9800; // 0x9800 - 9BFF
                 }
 
-                map_location += (offset & 0x3FFF);
+                map_location += (offset % 0x4000);
                 this->background_fetcher.tile_id = ReadVRAM(map_location);
             }
 
