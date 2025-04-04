@@ -257,17 +257,7 @@ void Application::RenderGUI()
 						this->gameboy->LoadROM(rom_path);
 					}
 				}
-
-				if(ImGui::MenuItem("Save State"))
-				{
-					// TODO
-				}
-
-				if(ImGui::MenuItem("Load State"))
-				{
-					// TODO
-				}
-
+				
 				ImGui::EndMenu();
 			}
 
