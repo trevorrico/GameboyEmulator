@@ -53,14 +53,14 @@ void Timer::Update(uint32_t cycle_diff)
     {
         this->internal_div_clock -= 256;
         
-        uint8_t div_reg = this->gb->mmu->Read(0xFF04);
-        if(div_reg + 1 > 0xFF)
+        //uint8_t div_reg = this->gb->mmu->Read(0xFF04);
+        if(this->div + 1 > 0xFF)
         {
-            this->gb->mmu->Write(0xFF04, 0x00);
+            this->div = 0;
         }
         else
         {
-            this->gb->mmu->Write(0xFF04, div_reg + 1);
+            this->div++;
         }
     }
 

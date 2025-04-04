@@ -20,11 +20,14 @@ public:
     void Update(uint32_t cycle_diff);
 
     void IncrementTIMA();
+    
+    uint8_t div = 0;
 private:
     GameBoy* gb;
 
     uint32_t internal_clock = 0;
     uint32_t internal_div_clock = 0;
+
 };
 
 #endif

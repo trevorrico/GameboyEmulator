@@ -53,8 +53,12 @@ void MemoryBus::Write(uint32_t address, uint8_t data)
 			memory[0xFF00] = this->gb->UpdateInput(data);
 			return;
 		}
-
-		if(address <= 0x7FFF)
+		else if(address == 0xFF04)
+		{
+			this->gb->timer->div = 0;
+			return;
+		}
+		else if(address <= 0x7FFF)
 		{
 			gb->active_cartridge->WriteROM(address, data);
 			return;
@@ -102,6 +106,10 @@ uint8_t MemoryBus::Read(uint32_t address)
 		else if (address >= 0xFE00 && address <= 0xFE9F)
 		{
 			return gb->ppu->ReadOAM(address);
+		}
+		else if(address == 0xFF04)
+		{
+			return this->gb->timer->div;
 		}
 	}
 	else
